@@ -148,3 +148,9 @@ a:hover {
 body.ux-layout-center {           /* if the container is the doc body (for viewport) */
     text-align:center;
 }
+
+.x-tree-node a span {
+    font-family: 'Courier New';
+    white-space: pre !important;
+    font-size:12px !important ;
+}

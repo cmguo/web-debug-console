@@ -26,11 +26,15 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
                     }
                 }
             };
+            this.removeAll();
             oReq.onreadystatechange = function() {
                 if (this.readyState > 2) {
                     state.parse(this.responseText);
                 }
             }
+            if (this.oReq)
+                this.oReq.abort();
+            this.oReq = oReq;
             oReq.open("get", this.url, true);
             oReq.send();
             return true;
@@ -84,7 +88,7 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
 
 var log_store = new StreamJsonStore({
     fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg'],
-    url: 'http://10.200.74.16:8085/log?w=&f=json'
+    url: 'http://127.0.0.1:8080/log?w=&f=json'
 });
 
 var panel_log = {
@@ -139,7 +143,15 @@ menu_def.add({
     leaf: true,
     panel: function() {
         log_store.load();
-        return new Ext.grid.GridPanel(panel_log);
+        var panel = new Ext.grid.GridPanel(panel_log);
+        panel.set_url = function(url) {
+            url = url + "log?w=&f=json";
+            if (this.store.url != url) {
+                this.store.url = url;
+                this.store.load();
+            }
+        };
+        return panel;
     }
 });
 
