@@ -10,23 +10,13 @@ Ext.onReady(function(){
     
     Ext.QuickTips.init();
 
-    var leftPanel = {
-        id: 'left-panel',
-        layout:'border',
-        region:'west',
-        margins:'0 5 5 0',
-        width: 200,
-        autoScroll:true,
-        items: [treePanel1, treePanel2]
-    };
-
     var mainPanel = {
         id: 'main-panel',
         region: 'center', // this is what makes this panel into a region within the containing layout
         layout: 'border',
         margins: '2 5 5 0',
         border: false,
-        items: [leftPanel, contentPanel]
+        items: [devicePanel, contentPanel]
     };
 
     var headerPanel = {
@@ -42,16 +32,6 @@ Ext.onReady(function(){
             html        : 'dddddddddd'
         }]
     };
-
-    var task = {
-        run: function(){
-            var layout = Ext.getCmp('content-panel').layout;
-            if (typeof(layout.activeItem.refresh) == 'function')
-                layout.activeItem.refresh();
-        },
-        interval: 1000 * 300 //300 second
-    }
-    Ext.TaskMgr.start(task);
 
     // Finally, build the main layout once all the pieces are ready.  This is also a good
     // example of putting together a full-screen BorderLayout within a Viewport.

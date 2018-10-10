@@ -154,3 +154,27 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
     white-space: pre !important;
     font-size:12px !important ;
 }
+
+.log-2 { /* trace */
+    background-color: gray;
+}
+
+.log-3 { /* debug */
+}
+
+.log-4 { /* info */
+    background-color: green;
+}
+
+.log-5 { /* warning */
+    background-color: yellow;
+}
+
+.log-6 { /* error */
+    background-color: red;
+}
+
+.log-7 { /* fatal */
+    background-color: red;
+}
+

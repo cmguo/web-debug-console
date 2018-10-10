@@ -51,14 +51,15 @@ var deviceLoader = {
             pack = new Ext.tree.TreeNode({
                 pack: o.Package,
                 port: o.mPort,
-                text: o.Package
+                text: o.Label
             });
             node.appendChild(pack);
         }
         var endpoint = new Ext.tree.TreeNode({
             pack: o.Package,
             port: o.mPort,
-            url: "http://" + node.attributes.addr + ":" + o.mPort + "/"
+            url: "http://" + node.attributes.addr + ":" + o.mPort + "/", 
+            text: o.Label + "(" + o.mPort + ")"
         });
         if (pack) {
             if (pack.attributes.url) {
@@ -68,15 +69,16 @@ var deviceLoader = {
                     port: pack.attributes.port,
                     url: pack.attributes.url
                 }));
-                pack.attributes.text = o.Package;
+                pack.attributes.text = o.Label;
+                pack.text = o.Label;
                 delete pack.attributes.url;
                 delete pack.attributes.port;
             }
-            endpoint.text = o.Package == o.Process ? "[Main]" : o.Process.substring(o.Package.length + 1);
-            endpoint.text += "(" + o.mPort + ")";
+            endpoint.attributes.text = o.Package == o.Process ? "[Main]" : o.Process.substring(o.Package.length + 1);
+            endpoint.attributes.text += "(" + o.mPort + ")";
+            endpoint.text = endpoint.attributes.text;
             pack.appendChild(endpoint);
         } else {
-            endpoint.text = o.Package + "(" + o.mPort + ")";
             node.appendChild(endpoint);
         }
     },
@@ -90,10 +92,11 @@ var deviceLoader = {
     }
 };
 
-var treePanel2 = new Ext.tree.TreePanel({
+var devicePanel = new Ext.tree.TreePanel({
     id: 'device-panel',
     title: '设备',
-    region:'center',
+    region:'west',
+    width: 200,
     autoScroll: true,
     collapsible: true,
 
@@ -114,9 +117,9 @@ var treePanel2 = new Ext.tree.TreePanel({
     },
 
     listeners: {
-        dblclick: function(node) {
+        click: function(node) {
             if (node.attributes.url) {
-                treePanel1.switch_endpoint(node.attributes.url);
+                contentPanel.switch_endpoint(node.attributes.url);
             }
         },
         contextmenu: function(node, e) {
@@ -153,14 +156,14 @@ var treePanel2 = new Ext.tree.TreePanel({
                 text: "输入IP", 
                 type: "device"
             });
-            treePanel2.getRootNode().appendChild(device);
-            var editor = treePanel2.editor;
+            devicePanel.getRootNode().appendChild(device);
+            var editor = devicePanel.editor;
             editor.triggerEdit(device);
         }
     }]
 });
 
-treePanel2.editor = new Ext.tree.TreeEditor(treePanel2, {}, {
+devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
     completeOnEnter: true,
     ignoreNoChange: true, 
     listeners: {
@@ -172,7 +175,7 @@ treePanel2.editor = new Ext.tree.TreeEditor(treePanel2, {}, {
             var device = editor.editNode;
             device.attributes.addr = value;
             device.reload();
-            treePanel2.save();
+            devicePanel.save();
         }
     }
 });

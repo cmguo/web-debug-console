@@ -1,7 +1,7 @@
 // status.js
 
 var status_loader = new Ext.tree.TreeLoader({
-    url: 'http://127.0.0.1:8080/jsontree', 
+    url: "none", 
     requestMethod: "GET",
     createNode: function(attr) {
         //attr.iconCls = attr.type;
@@ -18,7 +18,10 @@ status_loader.getParams = function(node){
     return buf.join("");
 }
 status_loader.on("beforeload", function(treeLoader, node) {
+    if (this.url == "none")
+        return false;
     this.baseParams._ = node.attributes.id;
+    return true;
 }, status_loader);
 
 var panel_status = {
@@ -33,6 +36,13 @@ var panel_status = {
         text: "All Status"
     }),
     loader: status_loader,
+    set_url: function(url) {
+        url = url + "jsontree";
+        if ( this.loader.url != url) {
+            this.loader.url = url;
+            this.getRootNode().reload();
+        }
+    },
     listeners : {
         beforecollapsenode: function(node) {
             while(node.firstChild){
@@ -66,24 +76,4 @@ var panel_status = {
     }),
 }
 
-menu_def.add({
-    id: 'status',
-    text: panel_status.title,
-    icon: panel_status.icon,
-    leaf: true,
-    panel: function() {
-        var panel = new Ext.tree.TreePanel(panel_status);
-        panel.clear_url = function() {
-            this.getRootNode().collapse();
-        };
-        panel.set_url = function(url) {
-            url = url + "jsontree";
-            if ( this.loader.url != url) {
-                this.loader.url = url;
-                this.getRootNode().reload();
-            }
-        };
-        return panel;
-    }
-});
-
+var statusPanel = new Ext.tree.TreePanel(panel_status);

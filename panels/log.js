@@ -27,6 +27,14 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
                 }
             };
             this.removeAll();
+            this.put({
+                time: new Date().getTime(),
+                pid: 0, 
+                tid: 0, 
+                priority: 7,
+                tag: '---',
+                msg: this.url
+            });
             oReq.onreadystatechange = function() {
                 if (this.readyState > 2) {
                     state.parse(this.responseText);
@@ -56,10 +64,14 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
     },
     addFilter: function(property, value, anyMatch, caseSensitive){
         this.filters = this.filters || {};
-        value = String(value);
-        this.filters[property] = new RegExp((anyMatch === true ? '' : '^') 
-            + Ext.escapeRe(value) + (anyMatch === true ? '' : '$'), 
-            caseSensitive ? '' : 'i');
+        if (typeof value != "function") {
+            value = String(value);
+            var regex = new RegExp((anyMatch === true ? '' : '^') 
+                + Ext.escapeRe(value) + (anyMatch === true ? '' : '$'), 
+                caseSensitive ? '' : 'i');
+            value = regex.test.bind(regex);
+        }
+        this.filters[property] = value;
         this.updateFilter();
     },
     clearFilter: function(property) {
@@ -76,7 +88,7 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
         var filters = this.filters;
         this.filterFn = function(r) {
             for (var f in filters) {
-                if (!filters[f].test(r.data[f])) {
+                if (!filters[f](r.data[f])) {
                     return false;
                 }
             }
@@ -101,7 +113,7 @@ var panel_log = {
         xtype: 'date', 
         header : '时间', 
         renderer: Ext.util.Format.dateRenderer('m-d h:i:s.u'),
-        width: 160
+        width: 140
     }, {
         id: 'pid', 
         header : '进程', 
@@ -119,45 +131,44 @@ var panel_log = {
         header: '消息', 
         width: 600
     }], 
+    viewConfig: {
+        getRowClass: function(record, index) {
+            return 'log-' + record.data.priority;
+        }
+    },
     store: log_store, 
+    set_url: function(url) {
+        url = url + "log?w=&f=json";
+        if (this.store.url != url) {
+            this.store.url = url;
+            this.store.load();
+        }
+    },
     listeners : {
         celldblclick: function(grid, rowIndex, columnIndex) {
             var store = this.getStore();
             var record = store.getAt(rowIndex);
             var field = store.fields.items[columnIndex];
-            if (columnIndex == 0 || columnIndex == 4) {
+            if (columnIndex == 0) {
+                store.toggleFilter("priority", function(value) {
+                    return value >= record.data.priority;
+                });
+            } else if (columnIndex == 4) {
                 if (window.clipboardData && window.clipboardData.setData) {
                     window.clipboardData.setData('text', record.data[field.name]);
                 }
                 return;
+            } else {
+                store.toggleFilter(field.name, record.data[field.name], false, true);
             }
-            store.toggleFilter(field.name, record.data[field.name], false, true);
             grid.getView().focusRow(store.indexOf(record));
         },
         headerclick: function(grid, columnIndex) {
             var store = this.getStore();
             var field = store.fields.items[columnIndex];
-            store.clearFilter(field.name);
+            store.clearFilter(columnIndex == 0 ? "priority" : field.name);
         }
     }
 }
 
-menu_def.add({
-    id: 'log',
-    text: panel_log.title,
-    icon: panel_log.icon,
-    leaf: true,
-    panel: function() {
-        log_store.load();
-        var panel = new Ext.grid.GridPanel(panel_log);
-        panel.set_url = function(url) {
-            url = url + "log?w=&f=json";
-            if (this.store.url != url) {
-                this.store.url = url;
-                this.store.load();
-            }
-        };
-        return panel;
-    }
-});
-
+var logPanel = new Ext.grid.GridPanel(panel_log);
