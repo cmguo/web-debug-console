@@ -125,6 +125,12 @@ var panel_log = {
             var store = this.getStore();
             var record = store.getAt(rowIndex);
             var field = store.fields.items[columnIndex];
+            if (columnIndex == 0 || columnIndex == 4) {
+                if (window.clipboardData && window.clipboardData.setData) {
+                    window.clipboardData.setData('text', record.data[field.name]);
+                }
+                return;
+            }
             store.toggleFilter(field.name, record.data[field.name], false, true);
             grid.getView().focusRow(store.indexOf(record));
         },
