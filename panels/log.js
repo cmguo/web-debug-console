@@ -50,6 +50,15 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
             return false;
         }
     }, 
+    reload: function(options) {
+        for (var p in this.baseParams) {
+            var v = this.baseParams[p];
+            if (v == '')
+                this.clearFilter(p);
+            else
+                this.addFilter(p, v, true, false);
+        }
+    }, 
     put: function(record) {
         convert_record(this.recordType, record);
         record = new Ext.data.Record(record);
@@ -98,14 +107,15 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
     }
 });
 
-var log_store = new StreamJsonStore({
+var logStore = new StreamJsonStore({
     fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg'],
     url: 'http://127.0.0.1:8080/log?w=&f=json'
 });
 
-var panel_log = {
+var logPanel = new Ext.grid.GridPanel({
     id: 'log-panel', 
     title: '日志', 
+    region: 'center',
     bodyBorder: false,
     autoWidth: true, 
     columns: [{
@@ -136,7 +146,7 @@ var panel_log = {
             return 'log-' + record.data.priority;
         }
     },
-    store: log_store, 
+    store: logStore, 
     set_url: function(url) {
         url = url + "log?w=&f=json";
         if (this.store.url != url) {
@@ -168,7 +178,21 @@ var panel_log = {
             var field = store.fields.items[columnIndex];
             store.clearFilter(columnIndex == 0 ? "priority" : field.name);
         }
-    }
-}
+    },
+    tbar: [
+        '搜索消息: ', ' ',
+        new Ext.app.SearchField({
+            store: logStore,
+            width:320, 
+            height: 300, 
+            paramName: "msg"
+        }), {
+            xtype: "button", 
+            text: "清空", 
+            handler: function() {
+                logStore.removeAll();
+            }
+        }
+    ]
+});
 
-var logPanel = new Ext.grid.GridPanel(panel_log);
