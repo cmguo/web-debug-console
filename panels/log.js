@@ -19,10 +19,15 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
                     while (end > 0) {
                         var line = response.substring(this.position, end + 1);
                         line = line.replace(new RegExp("\n", 'g'), "\\n");
-                        var result = Ext.decode(line);
-                        this.store.put(result);
-                        this.position = end + 2;
-                        end = response.indexOf('}\n', this.position);
+                        try {
+                            var result = Ext.decode(line);
+                            this.store.put(result);
+                        } catch (err) {
+                            Ext.MessageBox.alert("错误", err);
+                        } finally {
+                            this.position = end + 2;
+                            end = response.indexOf('}\n', this.position);
+                        }
                     }
                 }
             };
