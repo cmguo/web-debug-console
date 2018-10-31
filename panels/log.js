@@ -5,7 +5,7 @@ var StreamJsonStore = function(c) {
 };
 
 Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
-    load: function(options){
+    load: function(options) {
         options = options || {};
         if(this.fireEvent("beforeload", this, options) !== false){
             this.storeOptions(options);
@@ -20,7 +20,7 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
                         var line = response.substring(this.position, end + 1);
                         line = line.replace(new RegExp("\n", 'g'), "\\n");
                         try {
-                            var result = Ext.decode(line);
+                            var result = this.store.parse(line);
                             this.store.put(result);
                         } catch (err) {
                             Ext.MessageBox.alert("错误", err);
@@ -76,6 +76,9 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
         }
         this.add(record);
     },
+    parse: function(line) {
+        return Ext.decode(line);
+    },
     addFilter: function(property, value, anyMatch, caseSensitive){
         this.filters = this.filters || {};
         if (typeof value != "function") {
@@ -98,7 +101,7 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
         else
             this.addFilter(property, value, anyMatch, caseSensitive);
     },
-    updateFilter: function(){
+    updateFilter: function() {
         var filters = this.filters;
         this.filterFn = function(r) {
             for (var f in filters) {
@@ -112,13 +115,114 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
     }
 });
 
-var logStore = new StreamJsonStore({
-    fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg'],
-    url: 'http://127.0.0.1:8080/log?w=&f=json'
+var LogStore = function(c) {
+    c = Ext.applyIf(c || {}, {
+        fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg'],
+        url: 'http://127.0.0.1:8080/log?w=&f=json'
+    });
+    LogStore.superclass.constructor.call(this, c);
+};
+
+Ext.extend(LogStore, StreamJsonStore);
+
+var FileLogStore = function(c) {
+    FileLogStore.superclass.constructor.call(this, c);
+}
+
+Ext.extend(FileLogStore, LogStore, {
+    load: function(options) {
+        if (this.loaded)
+            return;
+        this.loadData(function(response) {
+            this.add(this.parseAll(response));
+            this.loaded = true;
+        }.bind(this));
+    }, 
+    loadData: function(response) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            response(e.target.result);
+        };
+        reader.readAsText(this.file)
+    },
+    parseAll: function(response) {
+        var lines = response.split('\n');
+        var items = [];
+        for (var i = 0; i < lines.length; ++i) {
+            var line = lines[i];
+            try {
+                var result = this.parse(line);
+                convert_record(this.recordType, result);
+                result = new Ext.data.Record(result);
+                items.push(result);
+            } catch (err) {
+                Ext.MessageBox.alert("错误", err);
+            }
+        }
+        return items;
+    }, 
+    parse: function(line) {
+        var ltime = "10-17 14:26:20:775".length;
+        var pos = 0;
+        var time = line.substring(pos, pos + ltime);
+        pos += ltime;
+        var pid = line.substring(pos, pos + 6).trim();
+        pos += 6;
+        var tid = line.substring(pos, pos + 6).trim();
+        pos += 6;
+        var prio = line.substring(pos + 1, pos + 2);
+        pos += 2;
+        var ltag = line.indexOf(":", pos);
+        var tag = line.substring(pos + 1, ltag);
+        pos = ltag;
+        var msg = line.substring(pos + 2);
+        return {
+            time: new Date(time), 
+            pid: parseInt(pid), 
+            tid: parseInt(tid), 
+            priority: "  VDIWEFS".indexOf(prio), 
+            tag: tag, 
+            msg: msg
+        };
+    }
 });
 
-var logPanel = new Ext.grid.GridPanel({
-    id: 'log-panel', 
+var ZipEntryLogStore = function(c) {
+    ZipEntryLogStore.superclass.constructor.call(this, c);
+}
+
+Ext.extend(ZipEntryLogStore, FileLogStore, {
+    loadData: function(callback) {
+        this.entry.getData(new zip.TextWriter(), function(text) {
+            callback(text);
+        });
+    }
+});
+
+var LogPanel = function(c) {
+    var logStore = new LogStore();
+    c = Ext.applyIf(c || {}, {
+        store: logStore, 
+        tbar: [
+            '搜索消息: ', ' ',
+            new Ext.app.SearchField({
+                store: logStore,
+                width: 320, 
+                height: 300, 
+                paramName: "msg"
+            }), {
+                xtype: "button", 
+                text: "清空", 
+                handler: function() {
+                    logStore.removeAll();
+                }
+            }
+        ]
+    });
+    LogPanel.superclass.constructor.call(this, c);
+}
+
+Ext.extend(LogPanel, Ext.grid.GridPanel, {
     title: '日志', 
     region: 'center',
     bodyBorder: false,
@@ -151,7 +255,6 @@ var logPanel = new Ext.grid.GridPanel({
             return 'log-' + record.data.priority;
         }
     },
-    store: logStore, 
     set_url: function(url) {
         url = url + "log?w=&f=json";
         if (this.store.url != url) {
@@ -183,21 +286,9 @@ var logPanel = new Ext.grid.GridPanel({
             var field = store.fields.items[columnIndex];
             store.clearFilter(columnIndex == 0 ? "priority" : field.name);
         }
-    },
-    tbar: [
-        '搜索消息: ', ' ',
-        new Ext.app.SearchField({
-            store: logStore,
-            width:320, 
-            height: 300, 
-            paramName: "msg"
-        }), {
-            xtype: "button", 
-            text: "清空", 
-            handler: function() {
-                logStore.removeAll();
-            }
-        }
-    ]
+    }
 });
 
+var logPanel = new LogPanel({
+    id: 'log-panel'
+});
