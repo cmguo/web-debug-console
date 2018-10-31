@@ -94,6 +94,7 @@ Ext.extend(StreamLogStore, LogStore, {
                     line = line.replace(new RegExp("\n", 'g'), "\\n");
                     try {
                         var result = this.store.parse(line);
+                        result.line = line;
                         this.store.put(result);
                     } catch (err) {
                         Ext.MessageBox.alert("错误", err);
@@ -106,6 +107,7 @@ Ext.extend(StreamLogStore, LogStore, {
         };
         this.removeAll();
         this.put({
+            line: '0 0 0 D --- http://',
             time: new Date().getTime(),
             pid: 0, 
             tid: 0, 
@@ -148,6 +150,7 @@ Ext.extend(TextLogStore, LogStore, {
             try {
                 var result = this.parse(line);
                 convert_record(this.recordType, result);
+                result.line = line;
                 result = new Ext.data.Record(result);
                 items.push(result);
             } catch (err) {
@@ -239,6 +242,20 @@ var LogPanel = function(c) {
                 text: "清空", 
                 handler: function() {
                     logStore.removeAll();
+                }
+            }, {
+                xtype: "button", 
+                text: "复制", 
+                handler: function() {
+                    new ClipboardJS('#' + this.id, {
+                        text: function(trigger) {
+                            var lines = [];
+                            logStore.each(function(record) {
+                                lines.push(record.data.line);
+                            });
+                            return lines.join("\n");
+                        }
+                    });
                 }
             }
         ]

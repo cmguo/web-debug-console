@@ -242,18 +242,17 @@ var InputWindow = function(c) {
     c = Ext.applyIf(c || {}, {
         layout: 'fit',
         width: 410,
-        height: 'auto',
         closeAction: 'hide',
         plain: true,
         title: '输入',
-        modal: true,
         items: [{
             xtype: 'fieldset',
+            border: false, 
             defaultType: 'textfield',
             items: [{
                 allowBlank: false,
                 hideLabel: true,
-                width: '380',
+                width: '380'
             }]
         }],
         buttons: [{
@@ -267,6 +266,7 @@ var InputWindow = function(c) {
             }
         }, {
             text: '取消',
+            scope: this, 
             handler: function() {
                 this.hide();
             }
@@ -378,7 +378,8 @@ var devicePanel = new Ext.tree.TreePanel({
     }),
 
     buttons: [{
-        text: "添加设备", 
+        text: "设备",
+        minWidth: 40, 
         handler: function() {
             var device = new Ext.tree.AsyncTreeNode({
                 text: "输入IP", 
@@ -389,12 +390,14 @@ var devicePanel = new Ext.tree.TreePanel({
             editor.triggerEdit(device);
         }
     }, {
-        text: "打开日志", 
+        text: "日志", 
+        minWidth: 40, 
         handler: function() {
             devicePanel.loader.addFile();
         }
     }, {
-        text: "打开JIRA", 
+        text: "JIRA", 
+        minWidth: 40, 
         handler: function() {
             new InputWindow({
                 title: "输入JIRA地址", 
