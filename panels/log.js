@@ -1,60 +1,13 @@
 // log.js
 
-var StreamJsonStore = function(c) {
-    StreamJsonStore.superclass.constructor.call(this, c);
+var LogStore = function(c) {
+    c = Ext.applyIf(c || {}, {
+        fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg']
+    });
+    LogStore.superclass.constructor.call(this, c);
 };
 
-Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
-    load: function(options) {
-        options = options || {};
-        if(this.fireEvent("beforeload", this, options) !== false){
-            this.storeOptions(options);
-            var p = Ext.apply(options.params || {}, this.baseParams);
-            var oReq = new XMLHttpRequest();
-            var state = {
-                store: this, 
-                position: 0,
-                parse: function(response) {
-                    var end = response.indexOf('}\n', this.position);
-                    while (end > 0) {
-                        var line = response.substring(this.position, end + 1);
-                        line = line.replace(new RegExp("\n", 'g'), "\\n");
-                        try {
-                            var result = this.store.parse(line);
-                            this.store.put(result);
-                        } catch (err) {
-                            Ext.MessageBox.alert("错误", err);
-                        } finally {
-                            this.position = end + 2;
-                            end = response.indexOf('}\n', this.position);
-                        }
-                    }
-                }
-            };
-            this.removeAll();
-            this.put({
-                time: new Date().getTime(),
-                pid: 0, 
-                tid: 0, 
-                priority: 7,
-                tag: '---',
-                msg: this.url
-            });
-            oReq.onreadystatechange = function() {
-                if (this.readyState > 2) {
-                    state.parse(this.responseText);
-                }
-            }
-            if (this.oReq)
-                this.oReq.abort();
-            this.oReq = oReq;
-            oReq.open("get", this.url, true);
-            oReq.send();
-            return true;
-        } else {
-            return false;
-        }
-    }, 
+Ext.extend(LogStore, Ext.data.JsonStore, {
     reload: function(options) {
         for (var p in this.baseParams) {
             var v = this.baseParams[p];
@@ -115,21 +68,70 @@ Ext.extend(StreamJsonStore, Ext.data.JsonStore, {
     }
 });
 
-var LogStore = function(c) {
+var StreamLogStore = function(c) {
     c = Ext.applyIf(c || {}, {
-        fields: [ {name: 'time', convert: function(v) { return new Date(v); } }, 'pid', 'tid', 'tag', 'msg'],
         url: 'http://127.0.0.1:8080/log?w=&f=json'
     });
-    LogStore.superclass.constructor.call(this, c);
+    StreamLogStore.superclass.constructor.call(this, c);
 };
 
-Ext.extend(LogStore, StreamJsonStore);
+Ext.extend(StreamLogStore, LogStore, {
+    load: function(options) {
+        options = options || {};
+        if (this.fireEvent("beforeload", this, options) === false) {
+            return false;
+        }
+        this.storeOptions(options);
+        var p = Ext.apply(options.params || {}, this.baseParams);
+        var oReq = new XMLHttpRequest();
+        var state = {
+            store: this, 
+            position: 0,
+            parse: function(response) {
+                var end = response.indexOf('}\n', this.position);
+                while (end > 0) {
+                    var line = response.substring(this.position, end + 1);
+                    line = line.replace(new RegExp("\n", 'g'), "\\n");
+                    try {
+                        var result = this.store.parse(line);
+                        this.store.put(result);
+                    } catch (err) {
+                        Ext.MessageBox.alert("错误", err);
+                    } finally {
+                        this.position = end + 2;
+                        end = response.indexOf('}\n', this.position);
+                    }
+                }
+            }
+        };
+        this.removeAll();
+        this.put({
+            time: new Date().getTime(),
+            pid: 0, 
+            tid: 0, 
+            priority: 7,
+            tag: '---',
+            msg: this.url
+        });
+        oReq.onreadystatechange = function() {
+            if (this.readyState > 2) {
+                state.parse(this.responseText);
+            }
+        }
+        if (this.oReq)
+            this.oReq.abort();
+        this.oReq = oReq;
+        oReq.open("get", this.url, true);
+        oReq.send();
+        return true;
+    }
+});
 
-var FileLogStore = function(c) {
-    FileLogStore.superclass.constructor.call(this, c);
+var TextLogStore = function(c) {
+    TextLogStore.superclass.constructor.call(this, c);
 }
 
-Ext.extend(FileLogStore, LogStore, {
+Ext.extend(TextLogStore, LogStore, {
     load: function(options) {
         if (this.loaded)
             return;
@@ -138,13 +140,6 @@ Ext.extend(FileLogStore, LogStore, {
             this.loaded = true;
         }.bind(this));
     }, 
-    loadData: function(response) {
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            response(e.target.result);
-        };
-        reader.readAsText(this.file)
-    },
     parseAll: function(response) {
         var lines = response.split('\n');
         var items = [];
@@ -187,11 +182,25 @@ Ext.extend(FileLogStore, LogStore, {
     }
 });
 
+var FileLogStore= function(c) {
+    FileLogStore.superclass.constructor.call(this, c);
+}
+
+Ext.extend(FileLogStore, TextLogStore, {
+    loadData: function(response) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            response(e.target.result);
+        };
+        reader.readAsText(this.file)
+    }
+});
+
 var ZipEntryLogStore = function(c) {
     ZipEntryLogStore.superclass.constructor.call(this, c);
 }
 
-Ext.extend(ZipEntryLogStore, FileLogStore, {
+Ext.extend(ZipEntryLogStore, TextLogStore, {
     loadData: function(callback) {
         this.entry.getData(new zip.TextWriter(), function(text) {
             callback(text);
@@ -199,8 +208,23 @@ Ext.extend(ZipEntryLogStore, FileLogStore, {
     }
 });
 
+var HttpLogStore = function(c) {
+    HttpLogStore.superclass.constructor.call(this, c);
+}
+
+Ext.extend(HttpLogStore, TextLogStore, {
+    loadData: function(callback) {
+        Ext.Ajax.request(Ext.apply({
+            url: this.url2, 
+            success: function(response) {
+                callback(response.responseText);
+            }
+        }, this.options));
+    }
+});
+
 var LogPanel = function(c) {
-    var logStore = new LogStore();
+    var logStore = c.store || new StreamLogStore();
     c = Ext.applyIf(c || {}, {
         store: logStore, 
         tbar: [
@@ -268,6 +292,25 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             var record = store.getAt(rowIndex);
             var field = store.fields.items[columnIndex];
             if (columnIndex == 0) {
+                var time = record.data.time;
+                if (store.filterTime) {
+                    var min;
+                    var max;
+                    if (time < store.filterTime) {
+                        min = time;
+                        max = store.filterTime;
+                    } else {
+                        min = store.filterTime;
+                        max = time;
+                    }
+                    store.addFilter("time", function(value) {
+                        return value >= min && value <= max;
+                    });
+                    store.filterTime = null;
+                } else {
+                    store.filterTime = time;
+                }
+            } else if (columnIndex == 4) {
                 store.toggleFilter("priority", function(value) {
                     return value >= record.data.priority;
                 });
@@ -284,7 +327,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
         headerclick: function(grid, columnIndex) {
             var store = this.getStore();
             var field = store.fields.items[columnIndex];
-            store.clearFilter(columnIndex == 0 ? "priority" : field.name);
+            store.clearFilter(columnIndex == 4 ? "priority" : field.name);
         }
     }
 });
