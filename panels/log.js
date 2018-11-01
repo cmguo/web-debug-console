@@ -154,7 +154,7 @@ var TextLogStore = function(c) {
             msg: msg
         };
     };
-    parseThreadTime.pattern = /^\d{2}-\d{2} (\d{2}:){3}\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/;
+    parseThreadTime.pattern = /^\d{2}-\d{2} (\d{2}:){2}\d{2}[:\.]\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/;
     var parseBrief = function(c) {
         var pos = 0;
         var prio = line.substring(pos, pos + 1);
@@ -258,6 +258,9 @@ Ext.extend(TextLogStore, LogStore, {
         if (this.parseState.lines.length > 10 && max.score > 4) {
             this.parse = max.parser;
             return this.parseAll(this.parseState.lines);
+        } else if (this.parseState.lines.length > 20) {
+            this.parse = function() { return [] };
+            throw "can't detech log format";
         }
         return [];
     }
@@ -277,15 +280,13 @@ Ext.extend(FileLogStore, TextLogStore, {
     }
 });
 
-var ZipEntryLogStore = function(c) {
-    ZipEntryLogStore.superclass.constructor.call(this, c);
+var EntryLogStore = function(c) {
+    EntryLogStore.superclass.constructor.call(this, c);
 }
 
-Ext.extend(ZipEntryLogStore, TextLogStore, {
+Ext.extend(EntryLogStore, TextLogStore, {
     loadData: function(callback) {
-        this.entry.getData(new zip.TextWriter(), function(text) {
-            callback(text);
-        });
+        this.entry.getText(callback);
     }
 });
 

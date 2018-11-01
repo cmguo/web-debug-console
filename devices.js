@@ -84,10 +84,16 @@ var deviceLoader = {
             reader = new zip.BlobReader(node.attributes.file);
         else
             reader = new zip.HttpReader(node.attributes.url);
+        var getText = function(callback) {
+            this.getData(new zip.TextWriter(), function(text) {
+                callback(text);
+            });
+        }
         zip.createReader(reader, function(zipReader) {
             node.attributes.reader = zipReader;
             zipReader.getEntries(function(entries) {
                 entries.forEach(function(entry) {
+                    entry.getText = getText;
                     var device = new Ext.tree.TreeNode({
                         text: entry.filename, 
                         type: "logentry", 
@@ -98,6 +104,37 @@ var deviceLoader = {
                 callback(this, node);
             }, function(msg) {
             });
+        });
+    },
+
+    loadRar: function(node, callback) {
+        var rar;
+        if (node.attributes.file) {
+            rar = Rar.fromFile(node.attributes.file);
+        } else {
+            rar = Rar.fromUri(node.attributes.url, node.attributes.opts);
+        }
+        rar.then((archive) => {
+            node.attributes.archive = archive;
+            var getText = function(callback) {
+                archive.get(this).then((entry) => {
+                    var reader = new FileReader();
+                    reader.onload = function() {
+                        callback(reader.result);
+                    }
+                    reader.readAsText(entry);
+                });
+            }
+            archive.entries.forEach(function(entry) {
+                entry.getText = getText;
+                var device = new Ext.tree.TreeNode({
+                    text: entry.name, 
+                    type: "logentry", 
+                    entry: entry
+                });
+                node.appendChild(device);
+            });
+            callback(this, node);
         });
     },
 
@@ -116,6 +153,15 @@ var deviceLoader = {
                             text: a.filename, 
                             type: "logzip", 
                             url: url.toString(), 
+                            opts: node.attributes.opts
+                        });
+                        node.appendChild(device);
+                    } else if (a.filename.endsWith(".rar")) {
+                        var device = new Ext.tree.AsyncTreeNode({
+                            text: a.filename, 
+                            type: "lograr", 
+                            url: url.toString(), 
+                            opts: node.attributes.opts
                         });
                         node.appendChild(device);
                     } else {
@@ -123,6 +169,7 @@ var deviceLoader = {
                             text: a.filename, 
                             type: "logfile", 
                             url: url.toString(), 
+                            opts: node.attributes.opts
                         });
                         node.appendChild(device);
                     }
@@ -181,6 +228,8 @@ var deviceLoader = {
             this.loadDevice(node, callback);
         } else if (node.attributes.type == "logzip") {
             this.loadZip(node, callback);
+        } else if (node.attributes.type == "lograr") {
+            this.loadRar(node, callback);
         } else if (node.attributes.type == "logjira") {
             this.loadJira(node, callback);
         }
@@ -196,6 +245,13 @@ var deviceLoader = {
                 var device = new Ext.tree.AsyncTreeNode({
                     text: file.name,
                     type: "logzip", 
+                    file: file
+                });
+                devicePanel.getRootNode().appendChild(device);
+            } else if (file.name.endsWith(".rar")) {
+                var device = new Ext.tree.AsyncTreeNode({
+                    text: file.name,
+                    type: "lograr", 
                     file: file
                 });
                 devicePanel.getRootNode().appendChild(device);
@@ -238,6 +294,14 @@ var deviceLoader = {
             var device = new Ext.tree.AsyncTreeNode({
                 text: id, 
                 type: "logzip",
+                opts: jiraOptions[host], 
+                url: url.pathname
+            });
+            devicePanel.getRootNode().appendChild(device);
+        } else if (id.endsWith(".rar")) {
+            var device = new Ext.tree.AsyncTreeNode({
+                text: id, 
+                type: "lograr",
                 opts: jiraOptions[host], 
                 url: url.pathname
             });
@@ -331,7 +395,7 @@ var devicePanel = new Ext.tree.TreePanel({
                         file: node.attributes.file
                     });
                 } else if (node.attributes.entry) {
-                    store = new ZipEntryLogStore({
+                    store = new EntryLogStore({
                         entry: node.attributes.entry
                     });
                 } else {
