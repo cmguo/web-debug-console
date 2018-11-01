@@ -1,8 +1,15 @@
 // devices.js
 
 var jiraOptions = {
-    headers: {
-        Authorization: "Basic cHBib3gtcm9tOlJvb20xMjM0NTY3"
+    "bugfree": {
+        headers: {
+            Authorization: "Basic cHBib3gtcm9tOlJvb20xMjM0NTY3"
+        }
+    }, 
+    "newjira.cnsuning.com": {
+        headers: {
+            Authorization: "Basic MTYwOTE4ODA6V0FMbHBhcGVyMTIzNDU2Nw=="
+        }
     }
 }
 
@@ -102,25 +109,27 @@ var deviceLoader = {
                 var json = response.responseText;
                 var o = eval("("+json+")");
                 o.fields.attachment.forEach(function(a) {
+                    var url = new URL(a.content);
+                    url.pathname = "/" + node.attributes.host + url.pathname;
                     if (a.filename.endsWith(".zip")) {
                         var device = new Ext.tree.AsyncTreeNode({
                             text: a.filename, 
                             type: "logzip", 
-                            url: a.content, 
+                            url: url.toString(), 
                         });
                         node.appendChild(device);
                     } else {
                         var device = new Ext.tree.TreeNode({
                             text: a.filename, 
                             type: "logfile", 
-                            url: a.content, 
+                            url: url.toString(), 
                         });
                         node.appendChild(device);
                     }
                 });
                 callback(this, node);
             }
-        }, jiraOptions));
+        }, node.attributes.opts));
     }, 
 
     addEndpoint: function(node, o) {
@@ -209,29 +218,36 @@ var deviceLoader = {
     },
 
     addJira: function(id) {
+        var host = "bugfree";
         if (id.indexOf("://") > 0) { 
             var url = new URL(id);
+            host = url.hostname;
             id = url.pathname.split("/").slice(-1)[0];
+            url.pathname = "/" + host + url.pathname;
         }
         if (id.indexOf(".") < 0) {
             var device = new Ext.tree.AsyncTreeNode({
                 text: id, 
                 type: "logjira",
-                url: "/rest/api/2/issue/" + id
+                host: host, 
+                opts: jiraOptions[host], 
+                url: "/" + host + "/rest/api/2/issue/" + id
             });
             devicePanel.getRootNode().appendChild(device);
         } else if (id.endsWith(".zip")) {
             var device = new Ext.tree.AsyncTreeNode({
                 text: id, 
                 type: "logzip",
-                url: url.toString()
+                opts: jiraOptions[host], 
+                url: url.pathname
             });
             devicePanel.getRootNode().appendChild(device);
         } else {
             var device = new Ext.tree.TreeNode({
                 text: id, 
                 type: "logfile",
-                url: url.toString()
+                opts: jiraOptions[host], 
+                url: url.pathname
             });
             devicePanel.getRootNode().appendChild(device);
         }
