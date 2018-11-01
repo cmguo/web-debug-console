@@ -13,6 +13,11 @@ var jiraOptions = {
     }
 }
 
+var rpc = { loaded: function() {} };
+RPC.new("./worker.js", rpc).then(function(r) {
+    rpc = r;
+});
+
 function clickElem(elem) {
     // Thx user1601638 on Stack Overflow (6/6/2018 - https://stackoverflow.com/questions/13405129/javascript-create-and-save-file )
     var eventMouse = document.createEvent("MouseEvents")
@@ -108,6 +113,44 @@ var deviceLoader = {
     },
 
     loadRar: function(node, callback) {
+        var getText = function(callback) {
+            var text = new TextDecoder("utf-8").decode(this.fileContent);
+            callback(text);
+        };
+        var rec = function(entry) {
+            if(entry.type === 'file') {
+                entry.getText = getText;
+                var device = new Ext.tree.TreeNode({
+                    text: entry.fullFileName, 
+                    type: "logentry", 
+                    entry: entry
+                });
+                node.appendChild(device);
+            } else if(entry.type === 'dir') {
+                Object.keys(entry.ls).forEach(function(k){
+                    rec(entry.ls[k])
+                })
+            } else {
+                throw "Unknown type"
+            }
+        }
+        var reader;
+        if (node.attributes.file)
+            reader = new zip.BlobReader(node.attributes.file);
+        else
+            reader = new zip.HttpReader(node.attributes.url);
+        reader.init(function() {
+            reader.readUint8Array(0, reader.size, function(bytes) {
+                var data = [{name: node.attributes.text, content: bytes}];
+                rpc.unrar(data, null).then(function(ret) {
+                    rec(ret);
+                    callback(this, node);
+                });
+            });
+        });
+    },
+
+    loadRar_: function(node, callback) {
         var rar;
         if (node.attributes.file) {
             rar = Rar.fromFile(node.attributes.file);
