@@ -130,36 +130,7 @@ Ext.extend(StreamLogStore, LogStore, {
 });
 
 var TextLogStore = function(c) {
-    TextLogStore.superclass.constructor.call(this, c);
-}
-
-Ext.extend(TextLogStore, LogStore, {
-    load: function(options) {
-        if (this.loaded)
-            return;
-        this.loadData(function(response) {
-            this.add(this.parseAll(response));
-            this.loaded = true;
-        }.bind(this));
-    }, 
-    parseAll: function(response) {
-        var lines = response.split('\n');
-        var items = [];
-        for (var i = 0; i < lines.length; ++i) {
-            var line = lines[i];
-            try {
-                var result = this.parse(line);
-                convert_record(this.recordType, result);
-                result.line = line;
-                result = new Ext.data.Record(result);
-                items.push(result);
-            } catch (err) {
-                Ext.MessageBox.alert("错误", err);
-            }
-        }
-        return items;
-    }, 
-    parse: function(line) {
+    var parseThreadTime = function(line) {
         var ltime = "10-17 14:26:20:775".length;
         var pos = 0;
         var time = line.substring(pos, pos + ltime);
@@ -175,13 +146,120 @@ Ext.extend(TextLogStore, LogStore, {
         pos = ltag;
         var msg = line.substring(pos + 2);
         return {
-            time: new Date(time), 
+            time: new Date(time).getTime(), 
             pid: parseInt(pid), 
             tid: parseInt(tid), 
             priority: "  VDIWEFS".indexOf(prio), 
             tag: tag, 
             msg: msg
         };
+    };
+    parseThreadTime.pattern = /^\d{2}-\d{2} (\d{2}:){3}\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/;
+    var parseBrief = function(c) {
+        var pos = 0;
+        var prio = line.substring(pos, pos + 1);
+        pos += 2;
+        var ltag = line.indexOf("(", pos);
+        var tag = line.substring(pos + 1, ltag);
+        pos = ltag;
+        var pid = line.substring(pos + 1, pos + 6).trim();
+        pos += 7;
+        var msg = line.substring(pos + 2);
+        return {
+            time: 0, 
+            pid: parseInt(pid), 
+            tid: 0, 
+            priority: "  VDIWEFS".indexOf(prio), 
+            tag: tag, 
+            msg: msg
+        };
+    }
+    parseBrief.pattern = /^[VDIWEFS]\/\w+\( *\d+\): .*/;
+    var parseUnknown1 = function(line) {
+        //18;38;24D/DownloadListAdapter( 3812): combineDatas
+        var ltime = "18;38;24".length;
+        var pos = 0;
+        var time = line.substring(pos, pos + ltime).replace(/;/g, ":");
+        pos += ltime;
+        var prio = line.substring(pos + 0, pos + 1);
+        pos += 2;
+        var ltag = line.indexOf("(", pos);
+        var tag = line.substring(pos, ltag);
+        pos = ltag;
+        var pid = line.substring(pos + 1, pos + 6).trim();
+        pos += 7;
+        var msg = line.substring(pos + 2);
+        return {
+            time: new Date("01-01 " + time).getTime(), 
+            pid: parseInt(pid), 
+            tid: 0, 
+            priority: "  VDIWEFS".indexOf(prio), 
+            tag: tag, 
+            msg: msg
+        };
+    }
+    parseUnknown1.pattern = /^\d{2};\d{2};\d{2}[VDIWEFS]\/\w+\( *\d+\): .*/;
+    c == c || {};
+    c.parseState = {
+        lines: [], 
+        parsers: [{
+            parser: parseThreadTime, 
+            score: 0
+        }, {
+            parser: parseBrief,
+            score: 0
+        }, {
+            parser: parseUnknown1,
+            score: 0
+        }]
+    };
+    TextLogStore.superclass.constructor.call(this, c);
+}
+
+Ext.extend(TextLogStore, LogStore, {
+    load: function(options) {
+        if (this.loaded)
+            return;
+        this.loadData(function(response) {
+            this.add(this.parseAll(response));
+            this.loaded = true;
+        }.bind(this));
+    }, 
+    parseAll: function(response) {
+        var lines = Array.isArray(response) ? response : response.split('\n');
+        var items = [];
+        for (var i = 0; i < lines.length; ++i) {
+            var line = lines[i];
+            try {
+                var result = this.parse(line);
+                if (Array.isArray(result)) {
+                    items = items.concat(result);
+                    continue;
+                }
+                convert_record(this.recordType, result);
+                result.line = line;
+                result = new Ext.data.Record(result);
+                items.push(result);
+            } catch (err) {
+                Ext.MessageBox.alert("错误", line + "\n" + err);
+            }
+        }
+        return items;
+    }, 
+    parse: function(line) {
+        this.parseState.lines = this.parseState.lines.concat(line);
+        var max = { score: 0 };
+        this.parseState.parsers.forEach(function (o) {
+            if (o.parser.pattern.test(line))
+                o.score += 1;
+            if (o.score > max.score)
+                max = o;
+        });
+        if (this.parseState.lines.length > 10 && max.score > 4) {
+            this.parse = max.parser;
+            return this.parseAll(this.parseState.lines);
+        }
+        return [];
     }
 });
 
@@ -272,7 +350,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
         id: 'time', 
         xtype: 'date', 
         header : '时间', 
-        renderer: Ext.util.Format.dateRenderer('m-d h:i:s.u'),
+        renderer: Ext.util.Format.dateRenderer('m-d H:i:s.u'),
         width: 140
     }, {
         id: 'pid', 
