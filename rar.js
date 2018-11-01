@@ -26,15 +26,26 @@ class Reader {
 }
 
 class UriReader extends Reader {
-    constructor(uri) {
+    constructor(uri, init) {
         super();
         this.uri = uri;
+        this.init = init || {};
+    }
+    mergeObject(dst, src) {
+        for (var k in src) {
+            if (typeof src[k] == 'object') {
+                dst[k] = this.mergeObject(dst[k] || {}, src[k]);
+            } else {
+                dst[k] = src[k];
+            }
+        }
+        return dst;
     }
     open() {
         return __awaiter(this, void 0, void 0, function* () {
-            return fetch(this.uri, {
+            return fetch(this.uri, this.mergeObject({
                 method: 'HEAD'
-            }).then((response) => {
+            }, this.init)).then((response) => {
                 if (!response.ok) {
                     throw new Error('Could not open URI');
                 }
@@ -53,12 +64,12 @@ class UriReader extends Reader {
     }
     read(length, position) {
         return __awaiter(this, void 0, void 0, function* () {
-            return fetch(this.uri, {
+            return fetch(this.uri, this.mergeObject({
                 method: 'GET',
                 headers: {
                     Range: `bytes=${position}-${position + length - 1}`
                 }
-            }).then((response) => {
+            }, this.init)).then((response) => {
                 if (!response.ok) {
                     throw new Error('Could not fetch URI');
                 }
@@ -226,9 +237,9 @@ function fromFile(file) {
         return fromReader(new NativeFileReader(file));
     });
 }
-function fromUri(uri) {
+function fromUri(uri, init) {
     return __awaiter(this, void 0, void 0, function* () {
-        return fromReader(new UriReader(uri));
+        return fromReader(new UriReader(uri, init));
     });
 }
 function fromLocal(path) {
