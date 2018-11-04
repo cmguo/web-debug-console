@@ -161,6 +161,57 @@ var TextLogStore = function(c) {
         };
     }
     parseBrief.pattern = /^[VDIWEFS]\/\w+\( *\d+\): .*/;
+    // <2018-08-26 00:18:43> [21244] [ERROR] [Version] arm-android-r9-gcc46-gstreamer
+    var prios = ["", "", "TRACE", "DEBUG", "INFO.", "WARN.", "ERROR"];
+    var parseFrameworkCpp = function(line) {
+        var ltime = "2018-08-26 00:18:43".length;
+        var pos = 1;
+        var time = line.substring(pos, pos + ltime);
+        pos += ltime + 3; var ltid = line.indexOf("]", pos);
+        var tid = line.substring(pos, ltid);
+        pos = ltid + 3;
+        var prio = line.substring(pos, pos + 5);
+        pos += 8;
+        var ltag = line.indexOf("]", pos);
+        var tag = line.substring(pos, ltag);
+        pos = ltag + 2;
+        var msg = line.substring(pos);
+        return {
+            time: new Date(time).getTime(), 
+            pid: 0, 
+            tid: parseInt(tid), 
+            priority: prios.indexOf(prio), 
+            tag: tag, 
+            msg: msg
+        };
+    };
+    parseFrameworkCpp.pattern = /^<\d{4}(-\d{2}){2} (\d{2}:){2}\d{2}> \[\d+\] \[\w+\] \[\w+\] .*/;
+    // 2018-2-15 10:43:46 9958 10318 W GLib+GStreamer External plugin loader failed.
+    var parseGLib = function(line) {
+        var pos = 0;
+        var ltime = line.indexOf(" ", 13);;
+        var time = line.substring(pos, pos + ltime);
+        pos = ltime + 1; var lpid = line.indexOf(" ", pos);
+        var pid = line.substring(pos, lpid);
+        pos = lpid + 1; var ltid = line.indexOf(" ", pos);
+        var tid = line.substring(pos, ltid);
+        pos = ltid + 1;
+        var prio = line.substring(pos, pos + 1);
+        pos += 2;
+        var ltag = line.indexOf(" ", pos);
+        var tag = line.substring(pos, ltag);
+        pos = ltag + 2;
+        var msg = line.substring(pos);
+        return {
+            time: new Date(time).getTime(), 
+            pid: pid, 
+            tid: parseInt(tid), 
+            priority: "  VDIWEC".indexOf(prio), 
+            tag: tag, 
+            msg: msg
+        };
+    };
+    parseGLib.pattern = /^\d{4}(-\d{1,2}){2} (\d{1,2}:){2}\d{1,2} \d+ \d+ [VDIWEC] [\w\+]+ .*/;
     var parseUnknown1 = function(line) {
         //18;38;24D/DownloadListAdapter( 3812): combineDatas
         var ltime = "18;38;24".length;
@@ -193,6 +244,12 @@ var TextLogStore = function(c) {
             score: 0
         }, {
             parser: parseBrief,
+            score: 0
+        }, {
+            parser: parseGLib,
+            score: 0
+        }, {
+            parser: parseFrameworkCpp,
             score: 0
         }, {
             parser: parseUnknown1,

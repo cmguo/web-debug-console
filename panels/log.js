@@ -22,7 +22,9 @@ Ext.extend(FilterStore, Ext.data.Store, {
                     old[v] = r;
                 }
             });
-            this.loadData(datas, true);
+            var r = this.reader.readRecords(datas);
+            this.add(r.records);
+            this.fireEvent("load", this, this.data.items);
         };
         this.store.on("load", filter, this);
     }
@@ -106,7 +108,10 @@ var LogPanel = function(c) {
         }, {
             dataIndex: 'priority', 
             header : '等级', 
-            width: 40
+            width: 40,
+            renderer: function(v) {
+                return "  VDIWEF".charAt(v);
+            }
         }, {
             dataIndex: 'tag', 
             header : '模块', 
@@ -145,51 +150,61 @@ var LogPanel = function(c) {
             type: 'string'
         }]
     });
+    var tbar = [
+        '搜索消息: ', ' ',
+        new Ext.app.SearchField({
+            store: new Ext.data.Store({
+                reload: function() {
+                    var filter = filters.getFilter("line");
+                    filter.setValue(this.baseParams['line']);
+                    filter.setActive(filter.isActivatable());
+                }
+            }),
+            width: 320, 
+            height: 300, 
+            paramName: "line"
+        }), {
+            xtype: "button", 
+            text: "清空", 
+            handler: function() {
+                logStore.removeAll();
+            }
+        }, {
+            xtype: "button", 
+            text: "更多", 
+            handler: function() {
+                logStore.loadNext();
+            }
+        }, {
+            xtype: "button", 
+            text: "复制", 
+            id: "log-copy", 
+            handler: function() {
+                new ClipboardJS('#' + this.id, {
+                    text: function(trigger) {
+                        var lines = [];
+                        logStore.each(function(record) {
+                            lines.push(record.data.line);
+                        });
+                        return lines.join("\n");
+                    }
+                });
+            }
+        }
+    ];
     c = Ext.applyIf(c || {}, {
         store: logStore, 
         cm: colMod, 
+        trackMouseOver: false,
         plugins: filters,
-        tbar: [
-            '搜索消息: ', ' ',
-            new Ext.app.SearchField({
-                store: new Ext.data.Store({
-                    reload: function() {
-                        var filter = filters.getFilter("line");
-                        filter.setValue(this.baseParams['line']);
-                        filter.setActive(filter.isActivatable());
-                    }
-                }),
-                width: 320, 
-                height: 300, 
-                paramName: "line"
-            }), {
-                xtype: "button", 
-                text: "清空", 
-                handler: function() {
-                    logStore.removeAll();
-                }
-            }, {
-                xtype: "button", 
-                text: "更多", 
-                handler: function() {
-                    logStore.loadNext();
-                }
-            }, {
-                xtype: "button", 
-                text: "复制", 
-                handler: function() {
-                    new ClipboardJS('#' + this.id, {
-                        text: function(trigger) {
-                            var lines = [];
-                            logStore.each(function(record) {
-                                lines.push(record.data.line);
-                            });
-                            return lines.join("\n");
-                        }
-                    });
+        sm: new Ext.grid.RowSelectionModel({
+            listeners: {
+                beforerowselect: function() {
+                    return false;
                 }
             }
-        ]
+        }),
+        tbar: tbar
     });
     LogPanel.superclass.constructor.call(this, c);
 }
@@ -243,9 +258,11 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             } else if (columnIndex == 3) {
                 filter.setValue({gt: value - 1});
             } else if (columnIndex == 5) {
-                if (window.clipboardData && window.clipboardData.setData) {
-                    window.clipboardData.setData('text', record.data[field.name]);
-                }
+                new ClipboardJS('#log-copy', {
+                    text: function(trigger) {
+                        return record.get("line");
+                    }
+                });
                 return;
             } else {
                 filter.toggleItem(value);
