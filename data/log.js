@@ -209,12 +209,22 @@ Ext.extend(TextLogStore, LogStore, {
         if (this.fireEvent("beforeload", this, options) === false) {
             return false;
         }
-        this.loadData(function(response) {
+        this.loadData(this.datasrc, function(response) {
             var records = this.parseAll(response);
-            this.add(records);
+            this.clearFilter(true);
+            this.insert(0, records.reverse());
             this.loaded = true;
             this.fireEvent("load", this, records, options);
         }.bind(this));
+    }, 
+    loadNext: function() {
+        if (!this.datasrc.next) {
+            Ext.MessageBox.alert("错误", "no more segments!");
+            return;
+        }
+        this.datasrc = this.datasrc.next;
+        this.loaded = false;
+        this.load({});
     }, 
     parseAll: function(response) {
         var lines = Array.isArray(response) ? response : response.split('\n');
@@ -263,12 +273,12 @@ var FileLogStore = function(c) {
 }
 
 Ext.extend(FileLogStore, TextLogStore, {
-    loadData: function(response) {
+    loadData: function(data, response) {
         var reader = new FileReader();
         reader.onload = function(e) {
             response(e.target.result);
         };
-        reader.readAsText(this.file)
+        reader.readAsText(data.file)
     }
 });
 
@@ -277,8 +287,8 @@ var EntryLogStore = function(c) {
 }
 
 Ext.extend(EntryLogStore, TextLogStore, {
-    loadData: function(callback) {
-        this.entry.getText(callback);
+    loadData: function(data, callback) {
+        data.entry.getText(callback);
     }
 });
 
@@ -287,9 +297,9 @@ var HttpLogStore = function(c) {
 }
 
 Ext.extend(HttpLogStore, TextLogStore, {
-    loadData: function(callback) {
+    loadData: function(data, callback) {
         Ext.Ajax.request(Ext.apply({
-            url: this.url2, 
+            url: data.url, 
             success: function(response) {
                 callback(response.responseText);
             }

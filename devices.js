@@ -41,8 +41,10 @@ function jsonp(url, callback) {
 var deviceLoader = {
 
     saveRoot: function(node) {
-        var devices = node.childNodes.map(function(n) {
-            return n.attributes.addr;
+        var devices = [];
+        node.childNodes.forEach(function(n) {
+            if (!n.attributes.file)
+                devices.push(n.attributes);
         });
         window.localStorage.devices = Ext.util.JSON.encode(devices);
     },
@@ -51,11 +53,7 @@ var deviceLoader = {
         var devices = window.localStorage.devices || "[]";
         devices = eval("("+devices+")");
         devices.forEach(function(d) {
-            var device = new Ext.tree.AsyncTreeNode({
-                text: d, 
-                addr: d, 
-                type: "device"
-            });
+            var device = new Ext.tree.AsyncTreeNode(d);
             node.appendChild(device);
         });
         callback(this, node);
@@ -94,6 +92,7 @@ var deviceLoader = {
                 callback(text);
             });
         }
+        var thiz = this;
         zip.createReader(reader, function(zipReader) {
             node.attributes.reader = zipReader;
             zipReader.getEntries(function(entries) {
@@ -106,6 +105,7 @@ var deviceLoader = {
                     });
                     node.appendChild(device);
                 });
+                thiz.sort(node);
                 callback(this, node);
             }, function(msg) {
             });
@@ -127,7 +127,7 @@ var deviceLoader = {
                 });
                 node.appendChild(device);
             } else if(entry.type === 'dir') {
-                Object.keys(entry.ls).forEach(function(k){
+                Object.keys(entry.ls).forEach(function(k) {
                     rec(entry.ls[k])
                 })
             } else {
@@ -139,11 +139,13 @@ var deviceLoader = {
             reader = new zip.BlobReader(node.attributes.file);
         else
             reader = new zip.HttpReader(node.attributes.url);
+        var thiz = this;
         reader.init(function() {
             reader.readUint8Array(0, reader.size, function(bytes) {
                 var data = [{name: node.attributes.text, content: bytes}];
                 rpc.unrar(data, null).then(function(ret) {
                     rec(ret);
+                    thiz.sort(node);
                     callback(this, node);
                 });
             });
@@ -182,6 +184,7 @@ var deviceLoader = {
     },
 
     loadJira: function(node, callback) {
+        var thiz = this;
         Ext.Ajax.request(Ext.apply({
             url: node.attributes.url, 
             disableCaching: false, 
@@ -217,9 +220,30 @@ var deviceLoader = {
                         node.appendChild(device);
                     }
                 });
+                thiz.sort(node);
                 callback(this, node);
             }
         }, node.attributes.opts));
+    }, 
+
+    sort: function(node) {
+        var c = node.firstChild;
+        while (c) {
+            var a = c.attributes;
+            var t = a.text + ".";
+            var s = 1;
+            var d = node.findChild("text", t + String(s));
+            while (d) {
+                a.next = d.attributes;
+                a = d.attributes;
+                d.remove();
+                ++s;
+                d = node.findChild("text", t + String(s));
+            }
+            if (s > 1)
+                c.text = c.text + "[" + String(s) + "]";
+            c = c.nextSibling;
+        };
     }, 
 
     addEndpoint: function(node, o) {
@@ -358,6 +382,7 @@ var deviceLoader = {
             });
             devicePanel.getRootNode().appendChild(device);
         }
+        devicePanel.save();
     }
 };
 
@@ -435,16 +460,15 @@ var devicePanel = new Ext.tree.TreePanel({
                 var store;
                 if (node.attributes.file) {
                     store = new FileLogStore({
-                        file: node.attributes.file
+                        datasrc: node.attributes
                     });
                 } else if (node.attributes.entry) {
                     store = new EntryLogStore({
-                        entry: node.attributes.entry
+                        datasrc: node.attributes
                     });
                 } else {
                     store = new HttpLogStore({
-                        url2: node.attributes.url, 
-                        options: node.attributes.opts
+                        datasrc: node.attributes
                     });
                 }
                 var panel = new LogPanel({
@@ -494,6 +518,7 @@ var devicePanel = new Ext.tree.TreePanel({
                         break;
                     case 'remove':
                         n.remove();
+                        devicePanel.save();
                         break;
                 }
             }

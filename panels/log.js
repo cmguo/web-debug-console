@@ -170,6 +170,12 @@ var LogPanel = function(c) {
                 }
             }, {
                 xtype: "button", 
+                text: "更多", 
+                handler: function() {
+                    logStore.loadNext();
+                }
+            }, {
+                xtype: "button", 
                 text: "复制", 
                 handler: function() {
                     new ClipboardJS('#' + this.id, {
