@@ -16,7 +16,14 @@ var contentPanel = new Ext.TabPanel({
     activeItem: 'blank-panel',
     border: false,
     deferredRender: true, 
-    items: [blankPanel, logPanel, statusPanel, commandPanel],
+    items: [
+        blankPanel, 
+        logPanel, 
+        statusPanel, 
+        jtracePanel, 
+        ntracePanel, 
+        commandPanel
+    ],
     listeners: {
         tabchange: function(tab, panel) {
             if (panel.set_url) {

@@ -155,6 +155,18 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
     font-size:12px !important ;
 }
 
+.x-grid3-cell-inner {
+    font-family: 'Courier New';
+    white-space: pre !important;
+    font-size:12px !important ;
+}
+
+.x-grid3-row-body {
+    font-family: 'Courier New';
+    white-space: pre !important;
+    font-size:12px !important ;
+}
+
 .log-2 { /* trace */
     background-color: gray;
 }
