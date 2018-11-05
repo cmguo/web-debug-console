@@ -92,22 +92,24 @@ var deviceLoader = {
                 callback(text);
             });
         }
-        var thiz = this;
+        var rec = function(entry) {
+            entry.getText = getText;
+            var type = this.getType(entry.filename);
+            var device = new Ext.tree.TreeNode({
+                text: entry.filename, 
+                type: type, 
+                entry: entry
+            });
+            node.appendChild(device);
+        };
+        var resp = function(entries) {
+            entries.forEach(rec, this);
+            this.sort(node);
+            callback(this, node);
+        }.bind(this);
         zip.createReader(reader, function(zipReader) {
             node.attributes.reader = zipReader;
-            zipReader.getEntries(function(entries) {
-                entries.forEach(function(entry) {
-                    entry.getText = getText;
-                    var device = new Ext.tree.TreeNode({
-                        text: entry.filename, 
-                        type: "logentry", 
-                        entry: entry
-                    });
-                    node.appendChild(device);
-                });
-                thiz.sort(node);
-                callback(this, node);
-            }, function(msg) {
+            zipReader.getEntries(resp, function(msg) {
             });
         });
     },
@@ -120,9 +122,10 @@ var deviceLoader = {
         var rec = function(entry) {
             if(entry.type === 'file') {
                 entry.getText = getText;
+                var type = this.getType(entry.fullFileName);
                 var device = new Ext.tree.TreeNode({
                     text: entry.fullFileName, 
-                    type: "logentry", 
+                    type: type, 
                     entry: entry
                 });
                 node.appendChild(device);
@@ -133,7 +136,7 @@ var deviceLoader = {
             } else {
                 throw "Unknown type"
             }
-        }
+        }.bind(this);
         var reader;
         if (node.attributes.file)
             reader = new zip.BlobReader(node.attributes.file);
@@ -174,7 +177,7 @@ var deviceLoader = {
                 entry.getText = getText;
                 var device = new Ext.tree.TreeNode({
                     text: entry.name, 
-                    type: "logentry", 
+                    type: "log", 
                     entry: entry
                 });
                 node.appendChild(device);
@@ -188,38 +191,23 @@ var deviceLoader = {
         Ext.Ajax.request(Ext.apply({
             url: node.attributes.url, 
             disableCaching: false, 
+            scope: this, 
             success: function(response) {
                 var json = response.responseText;
+                var prefix = node.attributes.url;
+                prefix = prefix.substring(0, prefix.indexOf("/", 1));
                 var o = eval("("+json+")");
                 o.fields.attachment.forEach(function(a) {
                     var url = new URL(a.content);
-                    url.pathname = "/" + node.attributes.host + url.pathname;
-                    if (a.filename.endsWith(".zip")) {
-                        var device = new Ext.tree.AsyncTreeNode({
-                            text: a.filename, 
-                            type: "logzip", 
-                            url: url.toString(), 
-                            opts: node.attributes.opts
-                        });
-                        node.appendChild(device);
-                    } else if (a.filename.endsWith(".rar")) {
-                        var device = new Ext.tree.AsyncTreeNode({
-                            text: a.filename, 
-                            type: "lograr", 
-                            url: url.toString(), 
-                            opts: node.attributes.opts
-                        });
-                        node.appendChild(device);
-                    } else {
-                        var device = new Ext.tree.TreeNode({
-                            text: a.filename, 
-                            type: "logfile", 
-                            url: url.toString(), 
-                            opts: node.attributes.opts
-                        });
-                        node.appendChild(device);
-                    }
-                });
+                    url.pathname = prefix + url.pathname;
+                    var type = this.getType(a.filename);
+                    node.appendChild(this.createNode({
+                        text: a.filename, 
+                        type: type, 
+                        url: url.toString(), 
+                        opts: node.attributes.opts
+                    }));
+                }.bind(this));
                 thiz.sort(node);
                 callback(this, node);
             }
@@ -289,15 +277,15 @@ var deviceLoader = {
     },
 
     load: function(node, callback) {
-        if (node.attributes.type == "root") {
+        if (node.attributes.type == "[root]") {
             this.loadRoot(node, callback);
-        } else if (node.attributes.type == "device") {
+        } else if (node.attributes.type == "[device]") {
             this.loadDevice(node, callback);
-        } else if (node.attributes.type == "logzip") {
+        } else if (node.attributes.type == "[zip]") {
             this.loadZip(node, callback);
-        } else if (node.attributes.type == "lograr") {
+        } else if (node.attributes.type == "[rar]") {
             this.loadRar(node, callback);
-        } else if (node.attributes.type == "logjira") {
+        } else if (node.attributes.type == "[jira]") {
             this.loadJira(node, callback);
         }
     }, 
@@ -308,81 +296,66 @@ var deviceLoader = {
             if (!file) {
                 return;
             }
-            if (file.name.endsWith(".zip")) {
-                var device = new Ext.tree.AsyncTreeNode({
-                    text: file.name,
-                    type: "logzip", 
-                    file: file
-                });
-                devicePanel.getRootNode().appendChild(device);
-            } else if (file.name.endsWith(".rar")) {
-                var device = new Ext.tree.AsyncTreeNode({
-                    text: file.name,
-                    type: "lograr", 
-                    file: file
-                });
-                devicePanel.getRootNode().appendChild(device);
-            } else {
-                var device = new Ext.tree.TreeNode({
-                    text: file.name,
-                    type: "logfile", 
-                    file: file
-                });
-                devicePanel.getRootNode().appendChild(device);
-            }
+            var type = this.getType(file.name);
+            var node = {
+                text: file.name,
+                type: type, 
+                file: file
+            };
+            devicePanel.getRootNode().appendChild(this.createNode(node));
             document.body.removeChild(fileInput);
-        };
+        }.bind(this);
         var fileInput = document.createElement("input");
-        fileInput.type='file';
-        fileInput.style.display='none';
-        fileInput.onchange=readFile;
+        fileInput.type = 'file';
+        fileInput.style.display = 'none';
+        fileInput.onchange = readFile;
         document.body.appendChild(fileInput);
         clickElem(fileInput);
     },
 
     addJira: function(id) {
         var host = "bugfree";
+        var path = id;
         if (id.indexOf("://") > 0) { 
             var url = new URL(id);
             host = url.hostname;
             id = url.pathname.split("/").slice(-1)[0];
-            url.pathname = "/" + host + url.pathname;
-        }
-        if (id.indexOf(".") < 0) {
-            var device = new Ext.tree.AsyncTreeNode({
-                text: id, 
-                type: "logjira",
-                host: host, 
-                opts: jiraOptions[host], 
-                url: "/" + host + "/rest/api/2/issue/" + id
-            });
-            devicePanel.getRootNode().appendChild(device);
-        } else if (id.endsWith(".zip")) {
-            var device = new Ext.tree.AsyncTreeNode({
-                text: id, 
-                type: "logzip",
-                opts: jiraOptions[host], 
-                url: url.pathname
-            });
-            devicePanel.getRootNode().appendChild(device);
-        } else if (id.endsWith(".rar")) {
-            var device = new Ext.tree.AsyncTreeNode({
-                text: id, 
-                type: "lograr",
-                opts: jiraOptions[host], 
-                url: url.pathname
-            });
-            devicePanel.getRootNode().appendChild(device);
+            path = "/" + host + url.pathname;
         } else {
-            var device = new Ext.tree.TreeNode({
-                text: id, 
-                type: "logfile",
-                opts: jiraOptions[host], 
-                url: url.pathname
-            });
-            devicePanel.getRootNode().appendChild(device);
+            path = "/" + host + "/rest/api/2/issue/" + id;
         }
+        var type = this.getType(id);
+        if (id.indexOf(".") < 0) {
+            type = "[jira]";
+            path = "/" + host + "/rest/api/2/issue/" + id;
+        }
+        var node = {
+            text: id, 
+            type: type,
+            opts: jiraOptions[host], 
+            url: path
+        };
+        devicePanel.getRootNode().appendChild(this.createNode(node));
         devicePanel.save();
+    },
+
+    getType: function(name) {
+        name = name.substring(name.lastIndexOf("/") + 1);
+        if (name.endsWith(".zip")) {
+            return "[zip]";
+        } else if (name.endsWith(".rar")) {
+            return "[rar]";
+        } else if (name.startsWith("traces.")) {
+            return "trace";
+        } else {
+            return "log";
+        }
+    },
+
+    createNode: function(node) {
+        return node.type.startsWith("[") 
+            ? new Ext.tree.AsyncTreeNode(node)
+            : new Ext.tree.TreeNode(node);
     }
 };
 
@@ -440,7 +413,7 @@ var devicePanel = new Ext.tree.TreePanel({
 
     root: new Ext.tree.AsyncTreeNode({
         text: '根节点',
-        type: "root"
+        type: "[root]"
     }),
 
     loader: deviceLoader,
@@ -455,12 +428,22 @@ var devicePanel = new Ext.tree.TreePanel({
                 contentPanel.setActiveTab(node.attributes.panel);
             } else if (node.attributes.type == 'endpoint') {
                 contentPanel.switch_endpoint(node.attributes.url);
-            } else if (node.attributes.type == 'logfile' 
-                || node.attributes.type == 'logentry') {
+            } else if (node.attributes.type == 'log') {
                 var panel = new LogPanel({
                     title: node.attributes.text, 
                     closable: true,
                     store: new TextLogStore({
+                        datasrc: node.attributes
+                    })
+                });
+                contentPanel.add(panel);
+                contentPanel.setActiveTab(panel);
+                node.attributes.panel = panel;
+            } else if (node.attributes.type == 'trace') {
+                var panel = new TracePanel({
+                    title: node.attributes.text, 
+                    closable: true,
+                    store: new TraceStore({
                         datasrc: node.attributes
                     })
                 });
@@ -519,14 +502,14 @@ var devicePanel = new Ext.tree.TreePanel({
         handler: function() {
             var device = new Ext.tree.AsyncTreeNode({
                 text: "输入IP", 
-                type: "device"
+                type: "[device]"
             });
             devicePanel.getRootNode().appendChild(device);
             var editor = devicePanel.editor;
             editor.triggerEdit(device);
         }
     }, {
-        text: "日志", 
+        text: "文件", 
         minWidth: 40, 
         handler: function() {
             devicePanel.loader.addFile();
@@ -549,7 +532,7 @@ devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
     listeners: {
         beforestartedit: function(editor) {
             var node = editor.editNode;
-            return node.attributes.type == "device";
+            return node.attributes.type == "[device]";
         },
         complete: function(editor, value) {
             var device = editor.editNode;
