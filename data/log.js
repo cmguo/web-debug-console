@@ -105,18 +105,88 @@ Ext.extend(StreamLogStore, LogStore, {
     }
 });
 
-var LogReader = function(c) {
-
+var LogParser = function(c) {
+    c = Ext.apply(c || {}, {
+        parseState: {
+            lines: [], 
+            parsers: [{
+                parser: LogcatThreadTimeParser, 
+                score: 0
+            }, {
+                parser: LogcatBriefParser,
+                score: 0
+            }, {
+                parser: GLibParser,
+                score: 0
+            }, {
+                parser: FrameworkCppParser,
+                score: 0
+            }, {
+                parser: UnknownParser1,
+                score: 0
+            }]
+        }
+    });
+    Ext.apply(this, c);
 }
 
-Ext.extend(LogReader, Ext.data.DataReader, {
-    readRecords: function() {
+LogParser.prototype = {
+    parse: function(line) {
+        this.parseState.lines = this.parseState.lines.concat(line);
+        var max = { score: 0 };
+        this.parseState.parsers.forEach(function (o) {
+            if (o.parser.prototype.pattern.test(line))
+                o.score += 1;
+            if (o.score > max.score)
+                max = o;
+        });
+        if (this.parseState.lines.length > 10 && max.score > 4) {
+            var parser = new max.parser();
+            this.parse = parser.parse.bind(parser);
+            return this.parseState.lines.map(this.parse);
+        } else if (this.parseState.lines.length > 20) {
+            this.parse = function() { return [] };
+            throw "can't detech log format";
+        }
+        return [];
     }
+};
+
+var LogReader = function(c) {
+    c = c || {};
+    this.parser = c.parser || new LogParser(c);
+    LogReader.superclass.constructor.call(this, c, c.fields);
+};
+
+Ext.extend(LogReader, Ext.data.DataReader, {
+    readRecords: function(data) {
+        var lines = data.split('\n');
+        var items = [];
+        for (var i = 0; i < lines.length; ++i) {
+            var line = lines[i];
+            if (line == "") continue;
+            try {
+                var result = this.parser.parse(line);
+                result = [].concat(result);
+                result.forEach(function (result) {
+                    convert_record(this.recordType, result);
+                    result.line = line;
+                    result = new Ext.data.Record(result);
+                    items.push(result);
+                }.bind(this));
+            } catch (err) {
+                Ext.MessageBox.alert("错误", line + "\n" + err);
+            }
+        }
+        return {count: items.length, records: items};
+    }, 
 });
 
-var TextLogStore = function(c) {
-    var year = String(new Date().getYear() + 1900) + "-";
-    var parseThreadTime = function(line) {
+// logcat -vthreadtime
+
+var LogcatThreadTimeParser = Ext.extend(LogParser, {
+    year: String(new Date().getYear() + 1900) + "-",
+    parse: function(line) {
         var ltime = "10-17 14:26:20:775".length;
         var pos = 0;
         var time = line.substring(pos, pos + ltime);
@@ -132,16 +202,21 @@ var TextLogStore = function(c) {
         pos = ltag;
         var msg = line.substring(pos + 2);
         return {
-            time: new Date(year + time).getTime(), 
+            time: new Date(this.year + time).getTime(), 
             pid: parseInt(pid), 
             tid: parseInt(tid), 
             priority: "  VDIWEFS".indexOf(prio), 
             tag: tag, 
             msg: msg
         };
-    };
-    parseThreadTime.pattern = /^\d{2}-\d{2} (\d{2}:){2}\d{2}[:\.]\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/;
-    var parseBrief = function(c) {
+    },
+    pattern: /^\d{2}-\d{2} (\d{2}:){2}\d{2}[:\.]\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/
+});
+
+// logcat -vbrief
+
+var LogcatBriefParser = Ext.extend(LogParser, {
+    parse: function(line) {
         var pos = 0;
         var prio = line.substring(pos, pos + 1);
         pos += 2;
@@ -159,11 +234,17 @@ var TextLogStore = function(c) {
             tag: tag, 
             msg: msg
         };
-    }
-    parseBrief.pattern = /^[VDIWEFS]\/\w+\( *\d+\): .*/;
-    // <2018-08-26 00:18:43> [21244] [ERROR] [Version] arm-android-r9-gcc46-gstreamer
-    var prios = ["", "", "TRACE", "DEBUG", "INFO.", "WARN.", "ERROR"];
-    var parseFrameworkCpp = function(line) {
+    },
+    pattern: /^[VDIWEFS]\/\w+\( *\d+\): .*/
+});
+
+
+// c++ framework logger
+// <2018-08-26 00:18:43> [21244] [ERROR] [Version] arm-android-r9-gcc46-gstreamer
+
+var FrameworkCppParser = Ext.extend(LogParser, {
+    prios: ["", "", "TRACE", "DEBUG", "INFO.", "WARN.", "ERROR"],
+    parse: function(line) {
         var ltime = "2018-08-26 00:18:43".length;
         var pos = 1;
         var time = line.substring(pos, pos + ltime);
@@ -180,14 +261,19 @@ var TextLogStore = function(c) {
             time: new Date(time).getTime(), 
             pid: 0, 
             tid: parseInt(tid), 
-            priority: prios.indexOf(prio), 
+            priority: this.prios.indexOf(prio), 
             tag: tag, 
             msg: msg
         };
-    };
-    parseFrameworkCpp.pattern = /^<\d{4}(-\d{2}){2} (\d{2}:){2}\d{2}> \[\d+\] \[\w+\] \[\w+\] .*/;
-    // 2018-2-15 10:43:46 9958 10318 W GLib+GStreamer External plugin loader failed.
-    var parseGLib = function(line) {
+    },
+    pattern: /^<\d{4}(-\d{2}){2} (\d{2}:){2}\d{2}> \[\d+\] \[\w+\] \[\w+\] .*/
+});
+
+// GLib logger
+// 2018-2-15 10:43:46 9958 10318 W GLib+GStreamer External plugin loader failed.
+
+var GLibParser = Ext.extend(LogParser, {
+    parse: function(line) {
         var pos = 0;
         var ltime = line.indexOf(" ", 13);;
         var time = line.substring(pos, pos + ltime);
@@ -210,10 +296,15 @@ var TextLogStore = function(c) {
             tag: tag, 
             msg: msg
         };
-    };
-    parseGLib.pattern = /^\d{4}(-\d{1,2}){2} (\d{1,2}:){2}\d{1,2} \d+ \d+ [VDIWEC] [\w\+]+ .*/;
-    var parseUnknown1 = function(line) {
-        //18;38;24D/DownloadListAdapter( 3812): combineDatas
+    },
+    pattern: /^\d{4}(-\d{1,2}){2} (\d{1,2}:){2}\d{1,2} \d+ \d+ [VDIWEC] [\w\+]+ .*/
+});
+
+// unknown 1
+// 18;38;24D/DownloadListAdapter( 3812): combineDatas
+
+var UnknownParser1 = Ext.extend(LogParser, {
+    parse: function(line) {
         var ltime = "18;38;24".length;
         var pos = 0;
         var time = line.substring(pos, pos + ltime).replace(/;/g, ":");
@@ -234,29 +325,14 @@ var TextLogStore = function(c) {
             tag: tag, 
             msg: msg
         };
-    }
-    parseUnknown1.pattern = /^\d{2};\d{2};\d{2}[VDIWEFS]\/\w+\( *\d+\): .*/;
+    },
+    pattern: /^\d{2};\d{2};\d{2}[VDIWEFS]\/\w+\( *\d+\): .*/
+});
+
+var TextLogStore = function(c) {
     c == c || {};
-    c.parseState = {
-        lines: [], 
-        parsers: [{
-            parser: parseThreadTime, 
-            score: 0
-        }, {
-            parser: parseBrief,
-            score: 0
-        }, {
-            parser: parseGLib,
-            score: 0
-        }, {
-            parser: parseFrameworkCpp,
-            score: 0
-        }, {
-            parser: parseUnknown1,
-            score: 0
-        }]
-    };
     TextLogStore.superclass.constructor.call(this, c);
+    this.reader = new LogReader(c);
 }
 
 Ext.extend(TextLogStore, LogStore, {
@@ -267,7 +343,8 @@ Ext.extend(TextLogStore, LogStore, {
             return false;
         }
         this.loadData(this.datasrc, function(response) {
-            var records = this.parseAll(response);
+            var records = this.reader.readRecords(response);
+            records = records.records;
             this.clearFilter(true);
             this.insert(0, records.reverse());
             this.loaded = true;
@@ -283,46 +360,6 @@ Ext.extend(TextLogStore, LogStore, {
         this.loaded = false;
         this.load({});
     }, 
-    parseAll: function(response) {
-        var lines = Array.isArray(response) ? response : response.split('\n');
-        var items = [];
-        for (var i = 0; i < lines.length; ++i) {
-            var line = lines[i];
-            if (line == "") continue;
-            try {
-                var result = this.parse(line);
-                if (Array.isArray(result)) {
-                    items = items.concat(result);
-                    continue;
-                }
-                convert_record(this.recordType, result);
-                result.line = line;
-                result = new Ext.data.Record(result);
-                items.push(result);
-            } catch (err) {
-                Ext.MessageBox.alert("错误", line + "\n" + err);
-            }
-        }
-        return items;
-    }, 
-    parse: function(line) {
-        this.parseState.lines = this.parseState.lines.concat(line);
-        var max = { score: 0 };
-        this.parseState.parsers.forEach(function (o) {
-            if (o.parser.pattern.test(line))
-                o.score += 1;
-            if (o.score > max.score)
-                max = o;
-        });
-        if (this.parseState.lines.length > 10 && max.score > 4) {
-            this.parse = max.parser;
-            return this.parseAll(this.parseState.lines);
-        } else if (this.parseState.lines.length > 20) {
-            this.parse = function() { return [] };
-            throw "can't detech log format";
-        }
-        return [];
-    }
 });
 
 var FileLogStore = function(c) {
