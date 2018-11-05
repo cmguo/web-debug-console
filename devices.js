@@ -457,24 +457,12 @@ var devicePanel = new Ext.tree.TreePanel({
                 contentPanel.switch_endpoint(node.attributes.url);
             } else if (node.attributes.type == 'logfile' 
                 || node.attributes.type == 'logentry') {
-                var store;
-                if (node.attributes.file) {
-                    store = new FileLogStore({
-                        datasrc: node.attributes
-                    });
-                } else if (node.attributes.entry) {
-                    store = new EntryLogStore({
-                        datasrc: node.attributes
-                    });
-                } else {
-                    store = new HttpLogStore({
-                        datasrc: node.attributes
-                    });
-                }
                 var panel = new LogPanel({
                     title: node.attributes.text, 
                     closable: true,
-                    store: store
+                    store: new TextLogStore({
+                        datasrc: node.attributes
+                    })
                 });
                 contentPanel.add(panel);
                 contentPanel.setActiveTab(panel);
@@ -565,6 +553,7 @@ devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
         },
         complete: function(editor, value) {
             var device = editor.editNode;
+            device.attributes.text = value;
             device.attributes.addr = value;
             device.reload();
             devicePanel.save();

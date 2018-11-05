@@ -27,6 +27,7 @@ Ext.extend(FilterStore, Ext.data.Store, {
             this.fireEvent("load", this, this.data.items);
         };
         this.store.on("load", filter, this);
+        this.store.on("add", filter, this);
     }
 });
 
@@ -106,7 +107,7 @@ var LogPanel = function(c) {
             header : '线程', 
             width: 60
         }, {
-            dataIndex: 'priority', 
+            dataIndex: 'prio', 
             header : '等级', 
             width: 40,
             renderer: function(v) {
@@ -136,7 +137,7 @@ var LogPanel = function(c) {
             type: 'list2', 
             store: logStore
         }, {
-            dataIndex: 'priority', 
+            dataIndex: 'prio', 
             type: 'numeric'
         }, {
             dataIndex: 'tag', 
@@ -218,7 +219,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
     enableColumnMove: false, 
     viewConfig: {
         getRowClass: function(record, index) {
-            return 'log-' + record.data.priority;
+            return 'log-' + record.data.prio;
         }
     },
     set_url: function(url) {
