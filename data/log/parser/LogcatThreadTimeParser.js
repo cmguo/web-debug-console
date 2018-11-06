@@ -28,7 +28,7 @@ var LogcatThreadTimeParser = Ext.extend(LogParser, {
             msg: msg
         };
     },
-    pattern: /^\d{2}-\d{2} (\d{2}:){2}\d{2}[:\.]\d{3} +\d+ +\d+ [VDIWEFS] \w+: .*/
+    pattern: /^\d{2}-\d{2} (\d{2}:){2}\d{2}[:\.]\d{3} +\d+ +\d+ [VDIWEFS] .+: .*/
 });
 
 LogParser.register("logcat-threadtime", LogcatThreadTimeParser);

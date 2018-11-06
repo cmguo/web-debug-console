@@ -27,7 +27,7 @@ var LogcatTimeParser = Ext.extend(LogParser, {
             msg: msg
         };
     },
-    pattern: /^\d{2}-\d{2} (\d{2}:){2}\d{2}\.\d{3} [VDIWEFS]\/\w+\( *\d+\): .*/
+    pattern: /^\d{2}-\d{2} (\d{2}:){2}\d{2}\.\d{3} [VDIWEFS]\/.+\( *\d+\): .*/
 });
 
 LogParser.register("logcat-time", LogcatTimeParser);

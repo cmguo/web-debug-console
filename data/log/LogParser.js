@@ -1,10 +1,9 @@
 // data/log/LogParser.js
 
 var LogParser = function(c) {
-    c = Ext.apply(c || {}, {
-        minLines: 10, 
-        minScore: 4
-    });
+    c = c || {};
+    this.minLines = c.minLines || 10;
+    this.minScore = c.minScore || 4;
     this.parseState = {
         lines: [], 
         parsers: Object.keys(LogParser.parsers).map(function(p) {
@@ -14,10 +13,42 @@ var LogParser = function(c) {
             };
         })
     };
-    Ext.apply(this, c);
 }
 
 LogParser.prototype = {
+    parseAll: function(data, callback) {
+        var state = {
+            msg: "分析日志...", 
+            total: 1, 
+            finish: 0
+        };
+        var error = {
+            count: 0
+        };
+        callback(state);
+        var lines = data.split(/\r?\n/);
+        state.total = lines.length;
+        state.step = lines.length / 100;
+        var items = [];
+        for (var i = 0; i < lines.length; ++i) {
+            if (i >= state.finish) {
+                state.finish = i;
+                callback(state);
+                state.finish += state.step;
+            }
+            var line = lines[i];
+            if (line == "") continue;
+            try {
+                var result = this.parse(line);
+                items = items.concat(result);
+            } catch (err) {
+                error.line = line;
+                error.err = err;
+                callback(error);
+            }
+        }
+        callback({ result: items });
+    },
     parse: function(line) {
         this.parseState.lines = this.parseState.lines.concat(line);
         var max = { score: 0 };

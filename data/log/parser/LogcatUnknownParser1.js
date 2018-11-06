@@ -1,9 +1,9 @@
-// data/log/parser/UnknownParser1.js
+// data/log/parser/LogcatUnknownParser1.js
 
 // unknown 1
 // 18;38;24D/DownloadListAdapter( 3812): combineDatas
 
-var UnknownParser1 = Ext.extend(LogParser, {
+var LogcatUnknownParser1 = Ext.extend(LogParser, {
     parse: function(line) {
         var ltime = "18;38;24".length;
         var pos = 0;
@@ -26,7 +26,7 @@ var UnknownParser1 = Ext.extend(LogParser, {
             msg: msg
         };
     },
-    pattern: /^\d{2};\d{2};\d{2}[VDIWEFS]\/\w+\( *\d+\): .*/
+    pattern: /^\d{2};\d{2};\d{2}[VDIWEFS]\/.+\( *\d+\): .*/
 });
 
-LogParser.register("unknown-1", UnknownParser1);
+LogParser.register("logcat-unknown1", LogcatUnknownParser1);

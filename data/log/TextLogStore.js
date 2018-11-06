@@ -20,13 +20,20 @@ Ext.extend(TextLogStore, LogStore, {
         if (this.fireEvent("beforeload", this, options) === false) {
             return false;
         }
+        var state = {
+            msg: "读取日志...",
+            total: 1, 
+            finish: 0
+        };
+        LoadingWindow.setProcess(state);
         this.proxy.loadData(function(response) {
-            var records = this.reader.read(response);
-            records = records.records;
-            this.clearFilter(true);
-            this.insert(0, records.reverse());
-            this.loaded = true;
-            this.fireEvent("load", this, records, options);
+            this.reader.read(response, function(records) {
+                records = records.records;
+                this.clearFilter(true);
+                this.insert(0, records.reverse());
+                this.loaded = true;
+                this.fireEvent("load", this, records, options);
+            }.bind(this));
         }.bind(this));
     }, 
     loadNext: function() {

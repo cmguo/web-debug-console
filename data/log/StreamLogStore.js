@@ -4,8 +4,9 @@ var StreamLogStore = function(c) {
     c = Ext.applyIf(c || {}, {
         url: 'http://127.0.0.1:8080/log?w=&f=json', 
         minLines: 1, 
-        minScore: 1
+        minScore: 1, 
     });
+    c.parser = c.parser || new LogParser(c);
     StreamLogStore.superclass.constructor.call(this, c);
 };
 
@@ -27,8 +28,9 @@ Ext.extend(StreamLogStore, LogStore, {
                 if (end > this.position) {
                     var lines = response.substring(this.position, end + 1);
                     try {
-                        var result = this.reader.read(lines);
-                        this.store.add(result.records);
+                        this.reader.read(lines, function(result) {
+                            this.store.add(result.records);
+                        }.bind(this));
                     //} catch (err) {
                     //    Ext.MessageBox.alert("错误", err);
                     } finally {

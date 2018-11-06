@@ -22,7 +22,7 @@ var LogcatBriefParser = Ext.extend(LogParser, {
             msg: msg
         };
     },
-    pattern: /^[VDIWEFS]\/\w+\( *\d+\): .*/
+    pattern: /^[VDIWEFS]\/.+\( *\d+\): .*/
 });
 
 LogParser.register("logcat-brief", LogcatBriefParser);

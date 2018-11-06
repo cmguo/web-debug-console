@@ -2,33 +2,38 @@
 
 var LoadingWindow = function(c) {
     var processBar = new Ext.ProgressBar({
-    });
-    var statusLabel = new Ext.form.Label({
+        width: 400,
+        height: 36,
     });
     c = Ext.applyIf(c || {}, {
         width: 400,
-        minWidth: 350,
-        height: 150,
+        height: 35,
         header: false,
+        border: false, 
+        layout: 'fit', 
         modal: true,
-        closeAction: 'hide',
-        bodyStyle: 'padding:10px;',
+        closable: false,
+   //     bodyStyle: 'padding:10px;',
         items: [
-            statusLabel, 
             processBar
-        ]
+        ],
+        setProcess: function(state) {
+            if (state == null) {
+                this.hide();
+                return;
+            }
+            processBar.updateProgress(state.finish / state.total, 
+                state.msg + " | " + state.finish + "/" + state.total);
+            this.show();
+        }
     });
     LoadingWindow.superclass.constructor.call(this, c);
 }
 
 Ext.extend(LoadingWindow, Ext.Window, {
-    setProcess: function(msg, total, finish) {
-        if (msg == null) {
-            this.hide();
-            return;
-        }
-        if (!this.label) {
-            this.label = 
-        }
-    }
 });
+
+LoadingWindow.setProcess = function(state) {
+    this.instance = this.instance || new LoadingWindow({});
+    this.instance.setProcess(state);
+}

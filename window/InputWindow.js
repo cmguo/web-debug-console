@@ -44,5 +44,5 @@ InputWindow.input = function(title, callback) {
     });
     this.instance.setTitle(title);
     this.instance.onOK = callback;
-    this.show();
+    this.instance.show();
 }
