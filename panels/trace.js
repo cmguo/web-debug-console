@@ -10,7 +10,7 @@ var TracePanel = function(c) {
         doGroupStart: function(buf, g, cs, ds, colCount) {
             if (g.gvalue.heldBy) {
                 var h = g.gvalue.heldBy;
-                g.style += h.heldBy == h ? " background-color: yellow" : " background-color: red";
+                g.style += h.heldBy == h ? " background-color: yellow" : " background-color: #ff4444";
             }
             Ext.grid.GroupingView.prototype.doGroupStart.apply(this, arguments);
         }

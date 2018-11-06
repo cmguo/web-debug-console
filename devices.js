@@ -504,3 +504,8 @@ devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
         }
     }
 });
+
+contentPanel.on("remove", function(cont, panel) {
+    if (panel.store.datasrc)
+        delete panel.store.datasrc.panel;
+});

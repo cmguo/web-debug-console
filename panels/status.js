@@ -38,7 +38,7 @@ var panel_status = {
     loader: status_loader,
     set_url: function(url) {
         url = url + "jsontree";
-        if ( this.loader.url != url) {
+        if (this.loader.url != url) {
             this.loader.url = url;
             this.getRootNode().reload();
         }

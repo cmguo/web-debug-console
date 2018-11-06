@@ -90,7 +90,7 @@ Ext.override(Ext.grid.filter.Filter, {
 Ext.grid.filter.List2Filter = ListFilter;
 
 var LogPanel = function(c) {
-    var logStore = c.store || new StreamLogStore(c);
+    var store = c.store || new StreamLogStore(c);
     var colMod = new Ext.grid.ColumnModel({
         defaultSortable: false, 
         columns: [{
@@ -132,18 +132,18 @@ var LogPanel = function(c) {
         }, {
             dataIndex: 'pid', 
             type: 'list2', 
-            store: logStore
+            store: store
         }, {
             dataIndex: 'tid', 
             type: 'list2', 
-            store: logStore
+            store: store
         }, {
             dataIndex: 'prio', 
             type: 'numeric'
         }, {
             dataIndex: 'tag', 
             type: 'list2', 
-            store: logStore
+            store: store
         }, {
             dataIndex: 'msg', 
             type: 'string'
@@ -169,13 +169,13 @@ var LogPanel = function(c) {
             xtype: "button", 
             text: "清空", 
             handler: function() {
-                logStore.removeAll();
+                store.removeAll();
             }
         }, {
             xtype: "button", 
             text: "更多", 
             handler: function() {
-                logStore.loadNext();
+                store.loadNext();
             }
         }, {
             xtype: "button", 
@@ -185,7 +185,7 @@ var LogPanel = function(c) {
                 new ClipboardJS('#' + this.id, {
                     text: function(trigger) {
                         var lines = [];
-                        logStore.each(function(record) {
+                        store.each(function(record) {
                             lines.push(record.data.line);
                         });
                         return lines.join("\n");
@@ -194,19 +194,25 @@ var LogPanel = function(c) {
             }
         }
     ];
+    var bbar = new Ext.PagingToolbar({
+        pageSize    : 100,
+        store       : store,
+        autoWidth   : true,
+        plugins     : filters,
+        displayInfo : true,
+        displayMsg  : '{0} - {1} of {2}',
+        emptyMsg    : '没有日志',
+        items       : ['-']
+    });
     c = Ext.applyIf(c || {}, {
-        store: logStore, 
+        store: store, 
         cm: colMod, 
         trackMouseOver: false,
         plugins: filters,
         sm: new Ext.grid.RowSelectionModel({
-            listeners: {
-                beforerowselect: function() {
-                    return false;
-                }
-            }
         }),
-        tbar: tbar
+        tbar: tbar,
+        bbar: bbar
     });
     LogPanel.superclass.constructor.call(this, c);
 }

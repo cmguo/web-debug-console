@@ -168,25 +168,26 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
 }
 
 .log-2 { /* trace */
-    background-color: gray;
+    color: gray;
 }
 
 .log-3 { /* debug */
 }
 
 .log-4 { /* info */
-    background-color: green;
+    color: green;
 }
 
 .log-5 { /* warning */
-    background-color: yellow;
+    color: blue;
 }
 
 .log-6 { /* error */
-    background-color: red;
+    color: red;
 }
 
 .log-7 { /* fatal */
     background-color: red;
+    color: cyan;
 }
 
