@@ -75,6 +75,7 @@ Ext.extend(ListFilter, Ext.grid.filter.ListFilter, {
         });
         if (sel) {
             sel.setChecked(!sel.checked);
+            this.setActive(this.isActivatable());
         }
     } 
 });
@@ -89,7 +90,7 @@ Ext.override(Ext.grid.filter.Filter, {
 Ext.grid.filter.List2Filter = ListFilter;
 
 var LogPanel = function(c) {
-    var logStore = c.store || new StreamLogStore();
+    var logStore = c.store || new StreamLogStore(c);
     var colMod = new Ext.grid.ColumnModel({
         defaultSortable: false, 
         columns: [{
@@ -222,13 +223,6 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             return 'log-' + record.data.prio;
         }
     },
-    set_url: function(url) {
-        url = url + "log?w=&f=json";
-        if (this.store.url != url) {
-            this.store.url = url;
-            this.store.load({});
-        }
-    },
     listeners : {
         celldblclick: function(grid, rowIndex, columnIndex) {
             var store = this.getStore();
@@ -252,12 +246,14 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
                         after: new Date(min), 
                         before: new Date(max)
                     });
+                    filter.setActive(true);
                     store.filterTime = null;
                 } else {
                     store.filterTime = time;
                 }
             } else if (columnIndex == 3) {
                 filter.setValue({gt: value - 1});
+                filter.setActive(true);
             } else if (columnIndex == 5) {
                 new ClipboardJS('#log-copy', {
                     text: function(trigger) {
@@ -280,5 +276,12 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
 });
 
 var logPanel = new LogPanel({
-    id: 'log-panel'
+    id: 'log-panel',
+    set_url: function(url) {
+        url = url + "log?w=&f=json";
+        if (this.store.url != url) {
+            this.store.url = url;
+            this.store.load({});
+        }
+    }
 });

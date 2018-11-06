@@ -20,7 +20,7 @@ var LogReader = function(c) {
 
 Ext.extend(LogReader, Ext.data.DataReader, {
     read: function(data) {
-        var lines = data.split('\n');
+        var lines = data.split(/\r?\n/);
         var items = [];
         for (var i = 0; i < lines.length; ++i) {
             var line = lines[i];
