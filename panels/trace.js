@@ -123,7 +123,7 @@ var jtracePanel = new TracePanel({
     datasrc: {
         url: 'http://localhost/trace?o='
     },
-    set_url: function(url) {
+    setUrl: function(url) {
         url = url + "trace?o=";
         if (this.store.proxy.url != url) {
             this.store.proxy.url = url;
@@ -141,7 +141,7 @@ var ntracePanel = new TracePanel({
     datasrc: {
         url: 'http://localhost/nativetrace?o='
     },
-    set_url: function(url) {
+    setUrl: function(url) {
         url = url + "nativetrace?o=";
         if (this.store.proxy.url != url) {
             this.store.proxy.url = url;

@@ -388,7 +388,7 @@ var devicePanel = new Ext.tree.TreePanel({
             if (node.attributes.panel) {
                 contentPanel.setActiveTab(node.attributes.panel);
             } else if (node.attributes.type == 'endpoint') {
-                contentPanel.switch_endpoint(node.attributes.url);
+                contentPanel.switchEndpoint(node.attributes.url);
             } else if (node.attributes.type == 'log') {
                 var panel = new LogPanel({
                     title: node.attributes.text, 

@@ -1,30 +1,6 @@
 // status.js
 
-var status_loader = new Ext.tree.TreeLoader({
-    url: "none", 
-    requestMethod: "GET",
-    createNode: function(attr) {
-        //attr.iconCls = attr.type;
-        return Ext.tree.TreeLoader.prototype.createNode.call(this, attr);
-    }
-});
-status_loader.getParams = function(node){
-    var buf = [], bp = this.baseParams;
-    for(var key in bp){
-        if(typeof bp[key] != "function"){
-            buf.push(encodeURIComponent(key), "=", encodeURIComponent(bp[key]), "&");
-        }
-    }
-    return buf.join("");
-}
-status_loader.on("beforeload", function(treeLoader, node) {
-    if (this.url == "none")
-        return false;
-    this.baseParams._ = node.attributes.id;
-    return true;
-}, status_loader);
-
-var panel_status = {
+var statusPanel = new Ext.tree.TreePanel({
     id: 'status-panel', 
     title: '状态', 
     bodyBorder: false,
@@ -35,8 +11,8 @@ var panel_status = {
         id: "/", 
         text: "All Status"
     }),
-    loader: status_loader,
-    set_url: function(url) {
+    loader: new StatusLoader(),
+    setUrl: function(url) {
         url = url + "jsontree";
         if (this.loader.url != url) {
             this.loader.url = url;
@@ -74,6 +50,4 @@ var panel_status = {
             }
         }
     }),
-}
-
-var statusPanel = new Ext.tree.TreePanel(panel_status);
+});

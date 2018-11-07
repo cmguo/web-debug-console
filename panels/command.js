@@ -1,36 +1,5 @@
 // command.js
 
-var commandLoader = new Ext.tree.TreeLoader({
-    url: "none", 
-    requestMethod: "GET",
-    baseParams: {
-        splitvalue: ""
-    },
-    createNode: function(attr) {
-        //attr.iconCls = attr.type;
-        return Ext.tree.TreeLoader.prototype.createNode.call(this, attr);
-    }
-});
-commandLoader.getParams = function(node){
-    var buf = [], bp = this.baseParams;
-    for(var key in bp){
-        if(typeof bp[key] != "function"){
-            buf.push(encodeURIComponent(key), "=", encodeURIComponent(bp[key]), "&");
-        }
-    }
-    return buf.join("");
-}
-commandLoader.on("beforeload", function(treeLoader, node) {
-    if (this.url == "none")
-        return false;
-    if (node.attributes.id == "/") {
-        this.baseParams._ = "console/mCommands";
-    } else {
-        this.baseParams._ = node.attributes.id + "/mSubCommands";
-    }
-    return true;
-}, commandLoader);
-
 var commandTree = new Ext.tree.TreePanel({
     id: 'command-tree', 
     title: '命令', 
@@ -39,11 +8,20 @@ var commandTree = new Ext.tree.TreePanel({
     autoScroll: true,
     rootVisible: false,
     root: new Ext.tree.AsyncTreeNode({
-        id: "/", 
+        id: "console/mCommands", 
         text: "All Commands"
     }),
-    loader: commandLoader,
-    set_url: function(url) {
+    loader: new StatusLoader({
+        baseParams: {
+            splitvalue: ""
+        },
+        createNode: function(attr) {
+            attr.path = attr.id;
+            attr.id += "/mSubCommands";
+            return StatusLoader.prototype.createNode.call(this, attr);
+        }
+    }),
+    setUrl: function(url) {
         url = url + "jsontree";
         if ( this.loader.url != url) {
             this.loader.url = url;
@@ -159,6 +137,7 @@ var detailPanel = new Ext.Panel({
     }], 
     buttons: [{
         text: '执行', 
+        scope: commandTree.loader,
         handler: function() {
             var cmd = detailPanel.cmd;
             var idPath = cmd.id.split("/");
@@ -199,8 +178,9 @@ var detailPanel = new Ext.Panel({
                 return;
             }
             params._ = args;
+            var url = this.url.replace("jsontree", name);
             Ext.Ajax.request({
-                url: commandLoader.url.replace("jsontree", name), 
+                url: url,
                 method: 'GET',
                 params: params,
                 scope: detailPanel,
@@ -233,18 +213,19 @@ var detailPanel = new Ext.Panel({
 });
 
 commandTree.on("click", function(node) {
+    var url = this.loader.url.replace("jsontree", "jsondump");
     Ext.Ajax.request({
-        url: commandLoader.url.replace("jsontree", "jsondump"), 
+        url: url, 
         method: 'GET',
         params: {
             x: '',
             o: '',
             d: 2, 
-            _: node.id
+            _: node.attributes.path
         }, 
         success: function(response) {
             var cmd = eval("("+response.responseText+")");
-            cmd.id = node.id;
+            cmd.id = node.attributes.path;
             detailPanel.setCmd(cmd);
         }
     });
@@ -258,8 +239,8 @@ var commandPanel = new Ext.Panel({
         commandTree, 
         detailPanel
     ],
-    set_url: function(url) {
-        commandTree.set_url(url);
+    setUrl: function(url) {
+        commandTree.setUrl(url);
     }
 });
 

@@ -191,3 +191,6 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
     color: cyan;
 }
 
+.file-size {
+     text-align: right;
+}

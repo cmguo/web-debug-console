@@ -20,23 +20,24 @@ var contentPanel = new Ext.TabPanel({
         blankPanel, 
         logPanel, 
         statusPanel, 
+        filePanel, 
         jtracePanel, 
         ntracePanel, 
         commandPanel
     ],
     listeners: {
-        tabchange: function(tab, panel) {
-            if (panel.set_url) {
-                panel.set_url(this.url || "http://localhost/");
+        beforetabchange: function(tab, panel) {
+            if (panel.setUrl) {
+                panel.setUrl(this.url || "http://localhost/");
             }
         }
     }
 });
 
-contentPanel.switch_endpoint = function(url) {
+contentPanel.switchEndpoint = function(url) {
     this.url = url;
     var layout = Ext.getCmp('content-panel').layout;
     var panel = layout.activeItem;
-    if (panel.set_url)
-        panel.set_url(url);
+    if (panel.setUrl)
+        panel.setUrl(url);
 }

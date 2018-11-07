@@ -273,7 +273,8 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
 
 var logPanel = new LogPanel({
     id: 'log-panel',
-    set_url: function(url) {
+    step: 0, 
+    setUrl: function(url) {
         url = url + "log?w=&f=json";
         if (this.store.url != url) {
             this.store.url = url;
