@@ -133,3 +133,31 @@ var convert_record = function (Record, data) {
         }
     }
 };
+
+var dateDiff = function() {
+    var minute = 60000;
+    var hour = minute * 60;
+    var day = hour * 24;
+    var week = day * 7;
+    var month = day * 30;
+    var year = month * 365;
+    return function(date, now) {
+        date = new Date(date);
+        now = now || new Date();
+        var diff = now - date;
+        if (diff >= year)
+            return Math.floor(diff / year) + "年前";
+        else if (diff > month)
+            return Math.floor(diff / month) + "月前";
+        else if (diff > week)
+            return Math.floor(diff / week) + "周前";
+        else if (diff > day)
+            return Math.floor(diff / day) + "天前";
+        else if (diff > hour)
+            return Math.floor(diff / hour) + "小时前";
+        else if (diff > minute)
+            return Math.floor(diff / minute) + "分钟前";
+        else
+            return "刚刚";
+    }
+}();

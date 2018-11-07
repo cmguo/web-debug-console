@@ -97,6 +97,7 @@ var deviceLoader = {
             var type = this.getType(entry.filename);
             var device = new Ext.tree.TreeNode({
                 text: entry.filename, 
+                name: entry.filename, 
                 type: type, 
                 entry: entry
             });
@@ -125,6 +126,7 @@ var deviceLoader = {
                 var type = this.getType(entry.fullFileName);
                 var device = new Ext.tree.TreeNode({
                     text: entry.fullFileName, 
+                    name: entry.fullFileName, 
                     type: type, 
                     entry: entry
                 });
@@ -177,6 +179,7 @@ var deviceLoader = {
                 entry.getText = getText;
                 var device = new Ext.tree.TreeNode({
                     text: entry.name, 
+                    name: entry.name, 
                     type: "log", 
                     entry: entry
                 });
@@ -197,12 +200,14 @@ var deviceLoader = {
                 var prefix = node.attributes.url;
                 prefix = prefix.substring(0, prefix.indexOf("/", 1));
                 var o = eval("("+json+")");
+                var now = new Date();
                 o.fields.attachment.forEach(function(a) {
                     var url = new URL(a.content);
                     url.pathname = prefix + url.pathname;
                     var type = this.getType(a.filename);
                     node.appendChild(this.createNode({
-                        text: a.filename, 
+                        text: a.filename + "(" + dateDiff(a.created, now) + ")", 
+                        name: a.filename,
                         type: type, 
                         url: url.toString(), 
                         opts: node.attributes.opts
@@ -218,15 +223,16 @@ var deviceLoader = {
         var c = node.firstChild;
         while (c) {
             var a = c.attributes;
-            var t = a.text + ".";
+            var t = a.name + ".";
             var s = 1;
-            var d = node.findChild("text", t + String(s));
+            var d = node.findChild("name", t + String(s));
             while (d) {
                 a.next = d.attributes;
+                d.attributes.prev = a;
                 a = d.attributes;
                 d.remove();
                 ++s;
-                d = node.findChild("text", t + String(s));
+                d = node.findChild("name", t + String(s));
             }
             if (s > 1)
                 c.text = c.text + "[" + String(s) + "]";
@@ -391,7 +397,7 @@ var devicePanel = new Ext.tree.TreePanel({
                 contentPanel.switchEndpoint(node.attributes.url);
             } else if (node.attributes.type == 'log') {
                 var panel = new LogPanel({
-                    title: node.attributes.text, 
+                    title: node.attributes.name, 
                     closable: true,
                     store: new TextLogStore({
                         datasrc: node.attributes
@@ -403,7 +409,7 @@ var devicePanel = new Ext.tree.TreePanel({
                 node.attributes.panel = panel;
             } else if (node.attributes.type == 'trace') {
                 var panel = new TracePanel({
-                    title: node.attributes.text, 
+                    title: node.attributes.name, 
                     closable: true,
                     store: new TraceStore({
                         datasrc: node.attributes
@@ -506,6 +512,10 @@ devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
 });
 
 contentPanel.on("remove", function(cont, panel) {
-    if (panel.store.datasrc)
-        delete panel.store.datasrc.panel;
+    if (panel.store.datasrc) {
+        var a = panel.store.datasrc;
+        while (a.prev)
+            a = a.prev;
+        delete a.panel;
+    }
 });
