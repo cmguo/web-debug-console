@@ -124,7 +124,7 @@ var LogPanel = function(c) {
             width: 600
         }]
     });
-    var page = new Ext.grid.filter.PageFilter();
+    var page = new Ext.grid.filter.PageFilter(c);
     var filters = new Ext.grid.GridFilters({
         local: true, 
         filters: [page, {
@@ -217,6 +217,19 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
     viewConfig: {
         getRowClass: function(record, index) {
             return 'log-' + record.data.prio;
+        }, 
+        listeners: {
+            rowsinserted: function(view, first, last) {
+                var vB = view.el.getBottom();
+                var fT = Ext.fly(view.getRow(first)).getTop();
+                if (vB >= fT) {
+                    if (last >= view.ds.getCount())
+                        last = view.ds.getCount() - 1;
+                    var lB = Ext.fly(view.getRow(last)).getBottom();
+                    if (lB > vB)
+                        view.scroller.dom.scrollTop += lB - fT;
+                }
+            }
         }
     },
     listeners : {
