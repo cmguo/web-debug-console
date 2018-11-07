@@ -30,7 +30,10 @@ Ext.extend(TextLogStore, LogStore, {
             this.reader.read(response, function(records) {
                 records = records.records;
                 this.clearFilter(true);
-                this.insert(0, records.reverse());
+                for(var i = 0, len = records.length; i < len; i++){
+                    this.data.insert(i, records[i]);
+                    records[i].join(this);
+                }
                 this.loaded = true;
                 this.fireEvent("load", this, records, options);
             }.bind(this));

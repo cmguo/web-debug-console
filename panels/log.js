@@ -124,9 +124,10 @@ var LogPanel = function(c) {
             width: 600
         }]
     });
+    var page = new Ext.grid.filter.PageFilter();
     var filters = new Ext.grid.GridFilters({
         local: true, 
-        filters: [{
+        filters: [page, {
             dataIndex: 'time', 
             type: 'date'
         }, {
@@ -194,25 +195,14 @@ var LogPanel = function(c) {
             }
         }
     ];
-    var bbar = new Ext.PagingToolbar({
-        pageSize    : 100,
-        store       : store,
-        autoWidth   : true,
-        plugins     : filters,
-        displayInfo : true,
-        displayMsg  : '{0} - {1} of {2}',
-        emptyMsg    : '没有日志',
-        items       : ['-']
-    });
     c = Ext.applyIf(c || {}, {
         store: store, 
         cm: colMod, 
         trackMouseOver: false,
-        plugins: filters,
+        plugins: [ filters, page ],
         sm: new Ext.grid.RowSelectionModel({
         }),
-        tbar: tbar,
-        bbar: bbar
+        tbar: tbar
     });
     LogPanel.superclass.constructor.call(this, c);
 }
@@ -234,7 +224,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             var store = this.getStore();
             var record = store.getAt(rowIndex);
             var field = store.fields.items[columnIndex];
-            var filter = this.plugins.getFilter(columnIndex);
+            var filter = this.filters.getFilter(field.name);
             var value = record.get(field.name);
             if (columnIndex == 0) {
                 var time = value.getTime();
@@ -275,9 +265,9 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
         headerclick: function(grid, columnIndex) {
             var store = this.getStore();
             var field = store.fields.items[columnIndex];
-            var filter = this.plugins.getFilter(columnIndex);
+            var filter = this.filters.getFilter(field.name);
             filter.toggleActive();
-        }
+        }, 
     }
 });
 

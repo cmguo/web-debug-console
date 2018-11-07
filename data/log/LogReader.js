@@ -28,10 +28,13 @@ Ext.extend(LogReader, Ext.data.DataReader, {
                 if (state.count == 1)
                     Ext.MessageBox.alert("错误", state.line + "\n" + state.err);
             } else if (state.result) {
+                var beginTime = +new Date();
                 items = state.result.map(function (result) {
                     convert_record(recordType, result);
                     return new Ext.data.Record(result);
                 });
+                var endTime = +new Date();
+                console.log("排序用时共计"+(endTime-beginTime)+"ms");
                 LoadingWindow.setProcess(null);
                 response({
                     count: items.length, 
