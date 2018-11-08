@@ -18,26 +18,5 @@ var contentPanel = new Ext.TabPanel({
     deferredRender: true, 
     items: [
         blankPanel, 
-        logPanel, 
-        statusPanel, 
-        filePanel, 
-        jtracePanel, 
-        ntracePanel, 
-        commandPanel
-    ],
-    listeners: {
-        beforetabchange: function(tab, panel) {
-            if (panel.setUrl) {
-                panel.setUrl(this.url || "http://localhost/");
-            }
-        }
-    }
+    ]
 });
-
-contentPanel.switchEndpoint = function(url) {
-    this.url = url;
-    var layout = Ext.getCmp('content-panel').layout;
-    var panel = layout.activeItem;
-    if (panel.setUrl)
-        panel.setUrl(url);
-}

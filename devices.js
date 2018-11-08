@@ -267,6 +267,7 @@ var deviceLoader = {
                     port: pack.attributes.port,
                     url: pack.attributes.url
                 }));
+                pack.attributes.type = 'app';
                 pack.attributes.text = o.Label;
                 pack.type = 'app';
                 pack.text = o.Label;
@@ -393,29 +394,33 @@ var devicePanel = new Ext.tree.TreePanel({
         click: function(node) {
             if (node.attributes.panel) {
                 contentPanel.setActiveTab(node.attributes.panel);
-            } else if (node.attributes.type == 'endpoint') {
-                contentPanel.switchEndpoint(node.attributes.url);
+                return;
+            }
+            var panel;
+            if (node.attributes.type == 'endpoint') {
+                panel = new EndpointPanel({
+                    title: node.attributes.text, 
+                    closable: true,
+                    datasrc: node.attributes
+                });
             } else if (node.attributes.type == 'log') {
-                var panel = new LogPanel({
+                panel = new LogPanel({
                     title: node.attributes.name, 
                     closable: true,
                     store: new TextLogStore({
                         datasrc: node.attributes
                     })
                 });
-                panel.store.load({});
-                contentPanel.add(panel);
-                contentPanel.setActiveTab(panel);
-                node.attributes.panel = panel;
             } else if (node.attributes.type == 'trace') {
-                var panel = new TracePanel({
+                panel = new TracePanel({
                     title: node.attributes.name, 
                     closable: true,
                     store: new TraceStore({
                         datasrc: node.attributes
                     })
                 });
-                panel.store.load({});
+            }
+            if (panel) {
                 contentPanel.add(panel);
                 contentPanel.setActiveTab(panel);
                 node.attributes.panel = panel;
@@ -512,10 +517,10 @@ devicePanel.editor = new Ext.tree.TreeEditor(devicePanel, {}, {
 });
 
 contentPanel.on("remove", function(cont, panel) {
-    if (panel.store.datasrc) {
-        var a = panel.store.datasrc;
-        while (a.prev)
-            a = a.prev;
-        delete a.panel;
+    var datasrc = panel.initialConfig.datasrc || panel.store.datasrc;
+    if (datasrc) {
+        while (datasrc.prev)
+            datasrc = datasrc.prev;
+        delete datasrc.panel;
     }
 });

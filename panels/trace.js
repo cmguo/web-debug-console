@@ -1,8 +1,15 @@
 // panels/trace.js
 
 var TracePanel = function(c) {
+    if (c.path) {
+        c.datasrc = Ext.apply({}, c.datasrc);
+        c.datasrc.url += c.path;
+        c.viewConfig = {
+            startCollapsed: false,
+        };
+    }
     var store = c.store || new TraceStore(c);
-    var view = new Ext.grid.GroupingView(Ext.applyIf(c.viewConfig || {}, {
+    var view = new Ext.grid.GroupingView(Ext.apply({
         forceFit: true,
         startCollapsed: true,
         enableGroupingMenu: false,
@@ -14,7 +21,7 @@ var TracePanel = function(c) {
             }
             Ext.grid.GroupingView.prototype.doGroupStart.apply(this, arguments);
         }
-    }));
+    }, c.viewConfig));
     var expander = new Ext.grid.RowExpander({
         tpl : new Ext.XTemplate(
                   '<tpl for="lines"',
@@ -37,7 +44,7 @@ var TracePanel = function(c) {
                 return proc.pid;
             },
             groupRenderer: function(proc) {
-                return proc.pid + " " + proc.cmdline;
+                return proc.pid + " " + proc.cmdline + " " + proc.time;
             }
         }, {
             dataIndex: 'tid', 
@@ -88,7 +95,16 @@ var TracePanel = function(c) {
             paramName: "lines"
         })
     ];
-    c = Ext.applyIf(c || {}, {
+    if (c.path) {
+        tbar.push({
+            xtype: "button", 
+            text: "刷新", 
+            handler: function() {
+                store.reload();
+            }
+        });
+    }
+    TracePanel.superclass.constructor.call(this, Ext.apply({
         region: 'center',
         bodyBorder: false,
         autoWidth: true, 
@@ -107,45 +123,32 @@ var TracePanel = function(c) {
                 }
             }
         })
-    });
-    TracePanel.superclass.constructor.call(this, c);
+    }, c));
 }
 
 Ext.extend(TracePanel, Ext.grid.GridPanel, {
-});
-
-var jtracePanel = new TracePanel({
-    id: 'jtrace-panel',
-    title: '栈(J)', 
-    viewConfig: {
-        startCollapsed: false,
-    },
-    datasrc: {
-        url: 'http://localhost/trace?o='
-    },
-    setUrl: function(url) {
-        url = url + "trace?o=";
-        if (this.store.proxy.url != url) {
-            this.store.proxy.url = url;
-            this.store.reload({});
+    title: '栈', 
+    listeners: {
+        activate: function() {
+            this.store.load({});
         }
     }
 });
 
-var ntracePanel = new TracePanel({
-    id: 'ntrace-panel',
+var JTracePanel = Ext.extend(TracePanel, {
+    title: '栈(J)', 
+    constructor: function(c) {
+        JTracePanel.superclass.constructor.call(this, Ext.apply({
+            path: "trace?o="
+        }, c));
+    }
+});
+
+var NTracePanel = Ext.extend(TracePanel, {
     title: '栈(N)', 
-    viewConfig: {
-        startCollapsed: false,
-    },
-    datasrc: {
-        url: 'http://localhost/nativetrace?o='
-    },
-    setUrl: function(url) {
-        url = url + "nativetrace?o=";
-        if (this.store.proxy.url != url) {
-            this.store.proxy.url = url;
-            this.store.reload({});
-        }
+    constructor: function(c) {
+        NTracePanel.superclass.constructor.call(this, Ext.apply({
+            path: "nativetrace?o="
+        }, c));
     }
 });

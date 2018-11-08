@@ -86,11 +86,13 @@ Ext.grid.filter.PageFilter = Ext.extend(Ext.grid.filter.Filter, {
 	},
 
     onScroll: function(scrollLeft, scrollTop) {
-        console.log("onScroll: " + scrollLeft + " " + scrollTop);
+        var count = this.grid.store.getCount();
+        if (count == 0)
+            return;
         var view = this.grid.view;
         var vTop = view.el.getTop();
         var vBottom = view.el.getBottom();
-        var lTop = Ext.fly(view.getRow(this.grid.store.getCount() - 1)).getTop();
+        var lTop = Ext.fly(view.getRow(count - 1)).getTop();
         if (lTop < vBottom + (vBottom - vTop) / 2)
             this.more();
     }

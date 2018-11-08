@@ -1,7 +1,9 @@
 // data/status/StatusLoader.js
 
 var StatusLoader = function(c) {
-    StatusLoader.superclass.constructor.call(this, c);
+    StatusLoader.superclass.constructor.call(this, Ext.apply({
+        url: c.datasrc.url + (c.path || 'jsontree')
+    }, c));
     this.on("beforeload", function(treeLoader, node) {
         if (!this.url)
             return false;
@@ -14,7 +16,6 @@ var StatusLoader = function(c) {
 
 Ext.extend(StatusLoader, Ext.tree.TreeLoader, {
     requestMethod: "GET",
-    url: "http://localhost/jsontree",
     createNode: function(attr) {
         //attr.iconCls = attr.type;
         return StatusLoader.superclass.createNode.call(this, attr);

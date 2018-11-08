@@ -1,8 +1,9 @@
 // panels/log.js
 
 var FilterStore = function(c) {
-    c.reader = new Ext.data.ArrayReader({id: 0}, ['id', c.filterField]);
-    FilterStore.superclass.constructor.call(this, c);
+    FilterStore.superclass.constructor.call(this, Ext.apply({
+        reader: new Ext.data.ArrayReader({id: 0}, ['id', c.filterField])
+    }, c));
     this.init();
 };
 
@@ -168,18 +169,6 @@ var LogPanel = function(c) {
             paramName: "line"
         }), {
             xtype: "button", 
-            text: "清空", 
-            handler: function() {
-                store.removeAll();
-            }
-        }, {
-            xtype: "button", 
-            text: "更多", 
-            handler: function() {
-                store.loadNext();
-            }
-        }, {
-            xtype: "button", 
             text: "复制", 
             id: "log-copy", 
             handler: function() {
@@ -195,7 +184,25 @@ var LogPanel = function(c) {
             }
         }
     ];
-    c = Ext.applyIf(c || {}, {
+    if (c.datasrc == 'endpoint') {
+        tbar.push({
+            xtype: "button", 
+            text: "清空", 
+            handler: function() {
+                store.removeAll();
+            }
+        });
+    } else if (store.datasrc.next) {
+        tbar.push({
+            xtype: "button", 
+            text: "更多", 
+            handler: function() {
+                store.loadNext();
+            }
+        });
+    }
+    LogPanel.superclass.constructor.call(this, Ext.apply({
+        title: '日志', 
         store: store, 
         cm: colMod, 
         trackMouseOver: false,
@@ -203,12 +210,10 @@ var LogPanel = function(c) {
         sm: new Ext.grid.RowSelectionModel({
         }),
         tbar: tbar
-    });
-    LogPanel.superclass.constructor.call(this, c);
+    }, c));
 }
 
 Ext.extend(LogPanel, Ext.grid.GridPanel, {
-    title: '日志', 
     region: 'center',
     bodyBorder: false,
     autoWidth: true, 
@@ -281,16 +286,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             var filter = this.filters.getFilter(field.name);
             filter.toggleActive();
         }, 
-    }
-});
-
-var logPanel = new LogPanel({
-    id: 'log-panel',
-    step: 0, 
-    setUrl: function(url) {
-        url = url + "log?w=&f=json";
-        if (this.store.url != url) {
-            this.store.url = url;
+        activate: function() {
             this.store.load({});
         }
     }

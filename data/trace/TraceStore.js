@@ -1,19 +1,20 @@
 // data/log/TraceStore.js
 
 var TraceStore = function(c) {
-    c = Ext.applyIf(c || {}, {
-        groupField: 'proc',
-        reader: c.reader || new TraceReader(c)
-    });
-    if (c.datasrc && !c.proxy) {
+    var proxy = c.proxy;
+    if (c.datasrc && !proxy) {
         if (c.datasrc.file)
-            c.proxy = new FileProxy(c);
+            proxy = new FileProxy(c);
         else if (c.datasrc.entry)
-            c.proxy = new EntryProxy(c);
+            proxy = new EntryProxy(c);
         else
-            c.proxy = new HttpProxy(c);
+            proxy = new HttpProxy(c);
     }
-    TraceStore.superclass.constructor.call(this, c);
+    TraceStore.superclass.constructor.call(this, Ext.apply({
+        groupField: 'proc',
+        reader: c.reader || new TraceReader(c),
+        proxy: proxy
+    }, c));
 }
 
 Ext.extend(TraceStore, Ext.data.GroupingStore, {

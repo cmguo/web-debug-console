@@ -1,13 +1,13 @@
 // data/log/StreamLogStore.js
 
 var StreamLogStore = function(c) {
-    c = Ext.applyIf(c || {}, {
-        url: 'http://127.0.0.1:8080/log?w=&f=json', 
+    var parser = c.parser || new LogParser(c);
+    StreamLogStore.superclass.constructor.call(this, Ext.apply({
         minLines: 1, 
         minScore: 1, 
-    });
-    c.parser = c.parser || new LogParser(c);
-    StreamLogStore.superclass.constructor.call(this, c);
+        url: c.datasrc.url + "log?w=&f=json",
+        parser: parser
+    }, c));
 };
 
 Ext.extend(StreamLogStore, LogStore, {
@@ -49,9 +49,21 @@ Ext.extend(StreamLogStore, LogStore, {
             tag: '---',
             msg: this.url
         }));
+        var thiz = this;
         oReq.onreadystatechange = function() {
             if (this.readyState > 2) {
                 state.parse(this.responseText);
+                if (this.readyState == 4) {
+                    thiz.add(new thiz.recordType({
+                        line: '0 0 0 D --- http://',
+                        time: new Date(),
+                        pid: 0, 
+                        tid: 0, 
+                        prio: 7,
+                        tag: '---',
+                        msg: "数据链接已经断开"
+                    }));
+                }
             }
         }
         if (this.oReq)

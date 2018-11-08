@@ -34,11 +34,14 @@ Ext.extend(TraceReader, Ext.data.DataReader, {
                 proc = null;
                 thread = null;
             } else if (line.startsWith("-----")) {
-                var pid = line.split(" ")[2];
+                var tokens = line.split(" ");
+                var pid = tokens[2];
+                var time = tokens[4] + " " + tokens[5];
                 proc = {
                     lines: [], 
                     threads: {}, 
-                    pid: parseInt(pid)
+                    pid: parseInt(pid),
+                    time: time
                 };
                 process.push(proc);
             } else if (line.startsWith("Cmd line: ")) {

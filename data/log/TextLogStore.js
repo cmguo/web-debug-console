@@ -45,6 +45,7 @@ Ext.extend(TextLogStore, LogStore, {
             return;
         }
         this.datasrc = this.datasrc.next;
+        Ext.apply(this.proxy, this.datasrc);
         this.loaded = false;
         this.load({});
     }, 

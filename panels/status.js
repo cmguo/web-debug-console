@@ -1,24 +1,37 @@
 // status.js
 
-var statusPanel = new Ext.tree.TreePanel({
-    id: 'status-panel', 
+var StatusPanel = function(c) {
+    StatusPanel.superclass.constructor.call(this, Ext.apply({
+        root: new Ext.tree.AsyncTreeNode({
+            id: "/", 
+            text: "All Status"
+        }),
+        loader: new StatusLoader(c),
+        contextMenu: new Ext.menu.Menu({
+            items: [{
+                id: 'refresh',
+                text: '刷新'
+            }],
+            listeners: {
+                itemclick: function(item) {
+                    switch (item.id) {
+                        case 'refresh':
+                            var n = item.parentMenu.contextNode;
+                            n.reload();
+                            break;
+                    }
+                }
+            }
+        })
+    }, c));
+};
+
+Ext.extend(StatusPanel, Ext.tree.TreePanel, {
     title: '状态', 
     bodyBorder: false,
     autoWidth: true, 
     autoScroll: true,
     rootVisible: false,
-    root: new Ext.tree.AsyncTreeNode({
-        id: "/", 
-        text: "All Status"
-    }),
-    loader: new StatusLoader(),
-    setUrl: function(url) {
-        url = url + "jsontree";
-        if (this.loader.url != url) {
-            this.loader.url = url;
-            this.getRootNode().reload();
-        }
-    },
     listeners : {
         beforecollapsenode: function(node) {
             while(node.firstChild){
@@ -32,22 +45,5 @@ var statusPanel = new Ext.tree.TreePanel({
             c.contextNode = node;
             c.showAt(e.getXY());
         }
-
     },
-    contextMenu: new Ext.menu.Menu({
-        items: [{
-            id: 'refresh',
-            text: '刷新'
-        }],
-        listeners: {
-            itemclick: function(item) {
-                switch (item.id) {
-                    case 'refresh':
-                        var n = item.parentMenu.contextNode;
-                        n.reload();
-                        break;
-                }
-            }
-        }
-    }),
 });
