@@ -242,7 +242,9 @@ var deviceLoader = {
 
     addEndpoint: function(node, o) {
         var pack = node.findChild("pack", o.Package);
-        if (!pack && o.Package != o.Process) {
+        var main = pack;
+        if (!pack && (o.Package != o.Process || o.mRemoteConsoles)
+                || (pack && pack.attributes.url)) {
             pack = new Ext.tree.TreeNode({
                 type: 'app',
                 pack: o.Package,
@@ -250,6 +252,11 @@ var deviceLoader = {
                 text: o.Label
             });
             node.appendChild(pack);
+            if (main) {
+                main.text = "[Main](" + pack.attributes.port + ")";
+                main.attributes.text = main.text;
+                pack.appendChild(main);
+            }
         }
         var endpoint = new Ext.tree.TreeNode({
             type: 'endpoint',
@@ -259,25 +266,21 @@ var deviceLoader = {
             text: o.Label + "(" + o.mPort + ")"
         });
         if (pack) {
-            if (pack.attributes.url) {
-                pack.appendChild(new Ext.tree.TreeNode({
-                    type: 'endpoint',
-                    pack: o.Package,
-                    text: "[Main](" + pack.attributes.port + ")", 
-                    port: pack.attributes.port,
-                    url: pack.attributes.url
-                }));
-                pack.attributes.type = 'app';
-                pack.attributes.text = o.Label;
-                pack.type = 'app';
-                pack.text = o.Label;
-                delete pack.attributes.url;
-                delete pack.attributes.port;
-            }
-            endpoint.attributes.text = o.Package == o.Process ? "[Main]" : o.Process.substring(o.Package.length + 1);
+            endpoint.attributes.text = o.Package == o.Process ? "[Main]" 
+                    : o.Process.substring(o.Package.length + 1);
             endpoint.attributes.text += "(" + o.mPort + ")";
             endpoint.text = endpoint.attributes.text;
             pack.appendChild(endpoint);
+            (o.mRemoteConsoles || []).forEach(function(console) {
+                var endpoint = new Ext.tree.TreeNode({
+                    type: 'endpoint',
+                    pack: o.Package,
+                    port: o.mPort,
+                    url: "http://" + node.attributes.addr + ":" + o.mPort + "/" + console.mName + ".", 
+                    text: console.mLabel + "(" + o.mPort + ")"
+                });
+                pack.appendChild(endpoint);
+            });
         } else {
             node.appendChild(endpoint);
         }
@@ -306,6 +309,7 @@ var deviceLoader = {
             var type = this.getType(file.name);
             var node = {
                 text: file.name,
+                name: file.name,
                 type: type, 
                 file: file
             };
@@ -354,6 +358,8 @@ var deviceLoader = {
             return "[rar]";
         } else if (name.startsWith("traces.")) {
             return "trace";
+        } else if (name.endsWith("maps")) {
+            return "mmap";
         } else {
             return "log";
         }
@@ -416,6 +422,14 @@ var devicePanel = new Ext.tree.TreePanel({
                     title: node.attributes.name, 
                     closable: true,
                     store: new TraceStore({
+                        datasrc: node.attributes
+                    })
+                });
+            } else if (node.attributes.type == 'mmap') {
+                panel = new MmapPanel({
+                    title: node.attributes.name, 
+                    closable: true,
+                    store: new MmapStore({
                         datasrc: node.attributes
                     })
                 });

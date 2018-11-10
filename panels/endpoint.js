@@ -23,7 +23,8 @@ var EndpointTab = function(c) {
 };
 
 Ext.extend(EndpointTab, Ext.TabPanel, {
-    border: false
+    border: false, 
+    activeTab: 0
 });
 
 var EndpointPanel = function(c) {

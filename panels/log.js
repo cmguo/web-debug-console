@@ -184,12 +184,19 @@ var LogPanel = function(c) {
             }
         }
     ];
-    if (c.datasrc == 'endpoint') {
+    if (store.datasrc.type == 'endpoint') {
         tbar.push({
             xtype: "button", 
             text: "清空", 
             handler: function() {
                 store.removeAll();
+            }
+        });
+        tbar.push({
+            xtype: "button", 
+            text: "重连", 
+            handler: function() {
+                store.reload();
             }
         });
     } else if (store.datasrc.next) {

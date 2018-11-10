@@ -161,3 +161,26 @@ var dateDiff = function() {
             return "刚刚";
     }
 }();
+
+
+var humanFileSize = function() {
+    var threshs = [1000, 1024];
+    var unitss = [
+        ['kB','MB','GB','TB','PB','EB','ZB','YB'],
+        ['KB','MB','GB','TB','PB','EB','ZB','YB']
+    ];
+    return function(bytes, si) {
+        si = si === true ? 0 : 1;
+        var thresh = threshs[si];
+        var units = unitss[si];
+        if(Math.abs(bytes) < thresh) {
+            return bytes + ' B';
+        }
+        var u = -1;
+        do {
+            bytes /= thresh;
+            ++u;
+        } while(Math.abs(bytes) >= thresh && u < units.length - 1);
+        return bytes.toFixed(1)+' '+units[u];        
+    }
+}();
