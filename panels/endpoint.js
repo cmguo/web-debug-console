@@ -15,6 +15,7 @@ var EndpointTab = function(c) {
             }, c)),
             new StatusPanel(c), 
             new FilePanel(c), 
+            new MmapPanel(c), 
             new JTracePanel(c), 
             new NTracePanel(c), 
             new CommandPanel(c)

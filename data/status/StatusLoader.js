@@ -7,8 +7,6 @@ var StatusLoader = function(c) {
     this.on("beforeload", function(treeLoader, node) {
         if (!this.url)
             return false;
-        if (this.url.indexOf("local"))
-            this.url = this.url;
         this.baseParams._ = node.attributes.id;
         return true;
     }, this);

@@ -18,9 +18,8 @@ var LogReader = function(c) {
     LogReader.superclass.constructor.call(this, c, c.fields);
 };
 
-Ext.extend(LogReader, Ext.data.DataReader, {
+Ext.extend(LogReader, DataReader, {
     read: function(data, response) {
-        var recordType = this.recordType;
         var callback = function(state) {
             if (state.msg) {
                 LoadingWindow.setProcess(state);
@@ -28,20 +27,11 @@ Ext.extend(LogReader, Ext.data.DataReader, {
                 if (state.count == 1)
                     Ext.MessageBox.alert("错误", state.line + "\n" + state.err);
             } else if (state.result) {
-                var beginTime = +new Date();
-                items = state.result.map(function (result) {
-                    convert_record(recordType, result);
-                    return new Ext.data.Record(result);
-                });
-                var endTime = +new Date();
-                console.log("排序用时共计"+(endTime-beginTime)+"ms");
+                var records = this.readRecords(state.result);
                 LoadingWindow.setProcess(null);
-                response({
-                    count: items.length, 
-                    records: items
-                });
+                response(records);
             }
-        };
+        }.bind(this);
         this.parser.parseAll(data, callback);
     }
 });

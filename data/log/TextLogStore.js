@@ -1,19 +1,6 @@
 // data/log/TextLogStore.js
 
-var TextLogStore = function(c) {
-    c == c || {};
-    if (c.datasrc && !c.proxy) {
-        if (c.datasrc.file)
-            c.proxy = new FileProxy(c);
-        else if (c.datasrc.entry)
-            c.proxy = new EntryProxy(c);
-        else
-            c.proxy = new HttpProxy(c);
-    }
-    TextLogStore.superclass.constructor.call(this, c);
-}
-
-Ext.extend(TextLogStore, LogStore, {
+var TextLogStore = Ext.extend(LogStore, {
     load: function(options) {
         if (this.loaded)
             return;
@@ -38,15 +25,5 @@ Ext.extend(TextLogStore, LogStore, {
                 this.fireEvent("load", this, records, options);
             }.bind(this));
         }.bind(this));
-    }, 
-    loadNext: function() {
-        if (!this.datasrc.next) {
-            Ext.MessageBox.alert("错误", "no more segments!");
-            return;
-        }
-        this.datasrc = this.datasrc.next;
-        Ext.apply(this.proxy, this.datasrc);
-        this.loaded = false;
-        this.load({});
     }, 
 });

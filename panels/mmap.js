@@ -1,14 +1,11 @@
 // panels/Mmap.js
 
 var MmapPanel = function(c) {
-    if (c.path) {
-        c.datasrc = Ext.apply({}, c.datasrc);
-        c.datasrc.url += c.path;
-        c.viewConfig = {
-            startCollapsed: false,
-        };
-    }
-    var store = c.store || new MmapStore(c);
+    var store = c.store || new MmapStore(Ext.apply(c, {
+        datasrc: Ext.applyIf({
+            url: c.datasrc.url + "file.get?_=/proc/self/smaps"
+        }, c.datasrc)
+    }));
     var view = new Ext.grid.GroupingView(Ext.apply({
         forceFit: true,
         startCollapsed: true,

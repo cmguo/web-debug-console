@@ -17,8 +17,8 @@ var MmapReader = function(c) {
     MmapReader.superclass.constructor.call(this, c, c.fields);
 };
 
-Ext.extend(MmapReader, Ext.data.DataReader, {
-    read: function(data) {
+Ext.extend(MmapReader, DataReader, {
+    readData: function(data) {
         var lines = data.split('\n');
         var mmaps = [];
         var mmap = null;
@@ -69,11 +69,6 @@ Ext.extend(MmapReader, Ext.data.DataReader, {
                 }
             }
         }, this);
-        var recordType = this.recordType;
-        mmaps = mmaps.map(function (result) {
-            convert_record(recordType, result);
-            return new Ext.data.Record(result);
-        });
-        return {count: mmaps.length, records: mmaps};
+        return mmaps;
     }
 });

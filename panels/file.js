@@ -10,18 +10,11 @@ var FileTree = function(c) {
                 //attr.iconCls = attr.type;
                 // #00: lrwxrwxrwx         20 1970-01-01 08:00:00.000 Customer
                 var line = attr.text;
+                if (line.charAt(0) != '#') return null;
                 var pos = line.indexOf(": ") + 2;
-                attr.mode = line.substring(pos, pos + 10); pos += 11;
-                attr.size = parseInt(line.substring(pos, pos + 10).trim()); pos += 11;
-                attr.date = line.substring(pos, pos + 10); pos += 11;
-                attr.time = line.substring(pos, pos + 8); pos += 13;
-                attr.name = line.substring(pos);
-                var sl = attr.name.indexOf(" -&gt ");
-                if (sl > 0) {
-                    attr.symlink = attr.name.substring(sl + 6);
-                    attr.name = attr.name.substring(0, sl);
-                }
-                attr.text = attr.name;
+                var file = FlstReader.prototype.readRecord(line.substring(pos));
+                Ext.apply(attr, file);
+                attr.text = file.name;
                 attr.uiProvider = "col";
                 return StatusLoader.prototype.createNode.call(this, attr);
             }
@@ -45,7 +38,8 @@ Ext.extend(FileTree, Ext.tree.ColumnTree, {
         header:'大小',
         width:60,
         dataIndex:'size', 
-        cls: "file-size"
+        cls: "file-size",
+        renderer: humanFileSize,
     },{
         header:'日期',
         width:80,

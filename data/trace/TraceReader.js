@@ -19,7 +19,7 @@ var TraceReader = function(c) {
 };
 
 Ext.extend(TraceReader, Ext.data.DataReader, {
-    read: function(data) {
+    readData: function(data) {
         var lines = data.split('\n');
         var process = [];
         var threads = [];
@@ -115,12 +115,7 @@ Ext.extend(TraceReader, Ext.data.DataReader, {
             }
             (thread || proc || glob).lines.push(line);
         }, this);
-        var recordType = this.recordType;
-        threads = threads.map(function (result) {
-            convert_record(recordType, result);
-            return new Ext.data.Record(result);
-        });
-        return {count: threads.length, records: threads};
+        return threads;
     }, 
     applyValues: function(item, tokens) {
         tokens.forEach(function(t) {
