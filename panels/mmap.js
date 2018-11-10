@@ -1,11 +1,11 @@
 // panels/Mmap.js
 
 var MmapPanel = function(c) {
-    var store = c.store || new MmapStore(Ext.apply(c, {
+    var store = c.store || new MmapStore(Ext.applyIf({
         datasrc: Ext.applyIf({
             url: c.datasrc.url + "file.get?_=/proc/self/smaps"
         }, c.datasrc)
-    }));
+    }, c));
     var view = new Ext.grid.GroupingView(Ext.apply({
         forceFit: true,
         startCollapsed: true,
@@ -85,6 +85,15 @@ var MmapPanel = function(c) {
         })
     ];
     if (c.path) {
+        tbar.push({
+            xtype: "button", 
+            text: "刷新", 
+            handler: function() {
+                store.reload();
+            }
+        });
+    }
+    if (c.datasrc) {
         tbar.push({
             xtype: "button", 
             text: "刷新", 

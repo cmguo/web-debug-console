@@ -12,7 +12,7 @@ var DataReader = Ext.extend(Ext.data.DataReader, {
             if (line == "") return;
             var record = this.readRecord(line);
             records.push(record);
-        });
+        }.bind(this));
         return records;
     }, 
     readRecord: function(line) {

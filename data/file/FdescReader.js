@@ -7,7 +7,8 @@ var FdescRecord = Ext.data.Record.create([
     'time',
     'timestamp',
     'mode',
-    'symlink',
+    'symlink', 
+    'num', 
     'type', 
 ]);
 
@@ -21,11 +22,17 @@ var FdescReader = function(c) {
 Ext.extend(FdescReader, FlstReader, {
     readRecord: function(line) {
         var file = FdescReader.superclass.readRecord.call(this, line);
+        file.num = parseInt(file.name);
         if (file.symlink) {
             var n = file.symlink.indexOf(':');
             if (n > 0) {
                 file.type = file.symlink.substring(0, n);
+            } else {
+                file.type = "file";
             }
+        } else {
+            file.symlink = "";
+            file.type = "";
         }
         return file;
     }

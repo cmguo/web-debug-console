@@ -294,7 +294,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
             filter.toggleActive();
         }, 
         activate: function() {
-            this.store.reload({});
+            this.store.load({});
         }
     }
 });

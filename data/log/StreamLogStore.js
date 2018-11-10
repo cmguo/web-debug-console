@@ -12,6 +12,7 @@ var StreamLogStore = function(c) {
 
 Ext.extend(StreamLogStore, LogStore, {
     load: function(options) {
+        if (this.oReq) return;
         options = options || {};
         if (this.fireEvent("beforeload", this, options) === false) {
             return false;
@@ -66,12 +67,16 @@ Ext.extend(StreamLogStore, LogStore, {
                 }
             }
         }
-        if (this.oReq)
-            this.oReq.abort();
         this.oReq = oReq;
         oReq.open("get", this.url, true);
         oReq.send();
         return true;
+    },
+    reload: function(o) {
+        if (this.oReq)
+            this.oReq.abort();
+        this.oReq = null;
+        this.load(o);
     },
     add : function(records){
         records = [].concat(records);

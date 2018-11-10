@@ -12,7 +12,8 @@ var FileTree = function(c) {
                 var line = attr.text;
                 if (line.charAt(0) != '#') return null;
                 var pos = line.indexOf(": ") + 2;
-                var file = FlstReader.prototype.readRecord(line.substring(pos));
+                line = line.substring(pos).replace("&gt", ">");
+                var file = FlstReader.prototype.readRecord(line);
                 Ext.apply(attr, file);
                 attr.text = file.name;
                 attr.uiProvider = "col";

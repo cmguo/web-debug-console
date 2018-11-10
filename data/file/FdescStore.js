@@ -2,7 +2,7 @@
 
 var FdescStore = function(c) {
     FdescStore.superclass.constructor.call(this, Ext.apply({
-        sortInfo: { field: 'addr' }, 
+        sortInfo: { field: 'num' }, 
         reader: c.reader || new FdescReader(c)
     }, c));
 }
