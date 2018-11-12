@@ -53,7 +53,37 @@ Ext.extend(FileTree, Ext.tree.ColumnTree, {
         header:'模式',
         width:70,
         dataIndex:'mode'
-    }]
+    }], 
+    listeners: {
+        contextmenu: function(node, e) {
+            var c = node.getOwnerTree().contextMenu;
+            c.contextNode = node;
+            c.showAt(e.getXY());
+        }
+    },
+    contextMenu: new Ext.menu.Menu({
+        items: [{
+            id: 'refresh',
+            text: '刷新'
+        }, {
+            id: 'get', 
+            text: '另存为'
+        }, {
+            id: 'remove', 
+            text: '删除'
+        }],
+        listeners: {
+            itemclick: function(item) {
+                var n = item.parentMenu.contextNode;
+                switch (item.id) {
+                    case 'refresh':
+                        n.reload();
+                        break;
+                }
+            }
+        }
+    }),
+
 });
 
 var FilePanel = function(c) {

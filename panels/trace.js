@@ -116,13 +116,7 @@ var TracePanel = function(c) {
         trackMouseOver: false,
         plugins: expander, 
         tbar: tbar, 
-        sm: new Ext.grid.RowSelectionModel({
-            listeners: {
-                beforerowselect: function() {
-                    return false;
-                }
-            }
-        })
+        sm: new Ext.grid.RowSelectionModel()
     }, c));
 }
 

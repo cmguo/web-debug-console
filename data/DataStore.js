@@ -42,6 +42,7 @@ Ext.extend(DataStore, Ext.data.GroupingStore, {
             return;
         }
         this.datasrc = this.datasrc.next;
+        this.proxy.nextsrc();
         this.loaded = false;
         this.load({});
     }, 

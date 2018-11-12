@@ -18,7 +18,7 @@ var TraceReader = function(c) {
     TraceReader.superclass.constructor.call(this, c, c.fields);
 };
 
-Ext.extend(TraceReader, Ext.data.DataReader, {
+Ext.extend(TraceReader, DataReader, {
     readData: function(data) {
         var lines = data.split('\n');
         var process = [];

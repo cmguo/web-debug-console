@@ -19,7 +19,8 @@ var EndpointTab = function(c) {
             new FdescPanel(c), 
             new JTracePanel(c), 
             new NTracePanel(c), 
-            new CommandPanel(c)
+            new CommandPanel(c), 
+            new ScreenPanel(c)
         ]
     }, c1));
 };

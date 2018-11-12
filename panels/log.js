@@ -214,8 +214,7 @@ var LogPanel = function(c) {
         cm: colMod, 
         trackMouseOver: false,
         plugins: [ filters, page ],
-        sm: new Ext.grid.RowSelectionModel({
-        }),
+        sm: new Ext.grid.RowSelectionModel(),
         tbar: tbar
     }, c));
 }

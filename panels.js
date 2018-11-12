@@ -17,6 +17,6 @@ var contentPanel = new Ext.TabPanel({
     border: false,
     deferredRender: true, 
     items: [
-        blankPanel, 
+        blankPanel,  
     ]
 });

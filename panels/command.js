@@ -11,6 +11,8 @@ var CommandTree = function(c) {
                 splitvalue: ""
             },
             createNode: function(attr) {
+                if (attr.value.indexOf('@') < 0)
+                    attr.text = attr.value;
                 attr.path = attr.id;
                 attr.id += "/mSubCommands";
                 return StatusLoader.prototype.createNode.call(this, attr);
@@ -147,7 +149,8 @@ Ext.extend(ArgListPanel, Ext.grid.EditorGridPanel, {
             Ext.MessageBox.alert("错误", error);
             return null;
         }
-        params._ = args;
+        if (args.length)
+            params._ = args;
         return params;
     }
 });
@@ -156,6 +159,7 @@ var DetailPanel = function(c) {
     var argList = new ArgListPanel({
         region: 'center',
     });
+    var panel = this;
     DetailPanel.superclass.constructor.call(this, Ext.apply({
         argList: argList,
         items: [{
@@ -172,6 +176,18 @@ var DetailPanel = function(c) {
             border: true,
             emptyText: '结果输出'
         }], 
+        bbar: [{
+            xtype: 'textfield', 
+            width: 800,
+            emptyText: '直接输入命令', 
+            listeners: {
+                specialkey: function(f, e){
+                    if (e.getKey() == e.ENTER) {
+                        panel.execute(this.getValue());
+                    }
+                }
+            }
+        }],
         buttons: [{
             text: '执行', 
             scope: this, 
@@ -182,14 +198,24 @@ var DetailPanel = function(c) {
 
 Ext.extend(DetailPanel, Ext.Panel, {
     layout: 'border',
-    execute: function() {
-        var cmd = this.cmd;
-        var idPath = cmd.id.split("/");
-        var name = idPath[3];
-        for (var i = 5; i < idPath.length; i += 2) {
-            name += "." + idPath[i];
+    execute: function(line) {
+        var name;
+        var params;
+        if (typeof line == "string") {
+            var tokens = line.split(" ");
+            name = tokens[0];
+            params = {
+                "_": tokens.slice(1)
+            }
+        } else {
+            var cmd = this.cmd;
+            var idPath = cmd.id.split("/");
+            name = idPath[3];
+            for (var i = 5; i < idPath.length; i += 2) {
+                name += "." + idPath[i];
+            }
+            params = this.argList.makeParams();
         }
-        var params = this.argList.makeParams();
         var url = this.datasrc.url + name;
         Ext.Ajax.request({
             url: url,
@@ -239,7 +265,7 @@ var CommandPanel = function(c) {
             params: {
                 x: '',
                 o: '',
-                d: 2, 
+                d: 0, 
                 _: node.attributes.path
             }, 
             success: function(response) {

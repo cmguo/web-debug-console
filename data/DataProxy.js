@@ -7,6 +7,9 @@ var DataProxy = function(c) {
 }
 
 Ext.extend(DataProxy, Ext.util.Observable, {
+    nextsrc: function() {
+        Ext.apply(this, this.next);
+    }
 });
 
 var FileProxy = function(c) {

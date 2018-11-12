@@ -253,7 +253,7 @@ var deviceLoader = {
             });
             node.appendChild(pack);
             if (main) {
-                main.text = "[Main](" + pack.attributes.port + ")";
+                main.text = "[Main](" + main.attributes.port + ")";
                 main.attributes.text = main.text;
                 pack.appendChild(main);
             }
