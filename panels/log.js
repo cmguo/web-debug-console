@@ -225,6 +225,7 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
     autoWidth: true, 
     enableColumnHide: false, 
     enableColumnMove: false, 
+    iconCls: "log-tab", 
     viewConfig: {
         getRowClass: function(record, index) {
             return 'log-' + record.data.prio;

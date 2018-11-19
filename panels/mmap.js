@@ -119,6 +119,7 @@ var MmapPanel = function(c) {
 
 Ext.extend(MmapPanel, Ext.grid.GridPanel, {
     title: '内存', 
+    iconCls: "mmap-tab", 
     listeners: {
         activate: function() {
             this.store.load({});

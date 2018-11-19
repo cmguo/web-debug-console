@@ -28,6 +28,7 @@ var StatusPanel = function(c) {
 
 Ext.extend(StatusPanel, Ext.tree.TreePanel, {
     title: '状态', 
+    iconCls: "status-tab",
     bodyBorder: false,
     autoWidth: true, 
     autoScroll: true,

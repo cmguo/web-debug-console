@@ -204,8 +204,9 @@ Ext.extend(DetailPanel, Ext.Panel, {
         if (typeof line == "string") {
             var tokens = line.split(" ");
             name = tokens[0];
-            params = {
-                "_": tokens.slice(1)
+            params = {};
+            if (tokens.length > 1) {
+                params["_"] = tokens.slice(1);
             }
         } else {
             var cmd = this.cmd;
@@ -283,4 +284,5 @@ var CommandPanel = function(c) {
 Ext.extend(CommandPanel, Ext.Panel, {
     title: '命令',
     layout: 'border',
+    iconCls: "command-tab"
 });

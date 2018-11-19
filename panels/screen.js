@@ -25,6 +25,7 @@ var ScreenPanel = function(c) {
 Ext.extend(ScreenPanel, Ext.Panel, {
     title: '屏幕',
     layout:'card',
+    iconCls: "screen-tab",
     activeItem: 0,
     listeners: {
         activate: function() {

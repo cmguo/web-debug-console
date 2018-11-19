@@ -194,3 +194,31 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
 .file-size {
      text-align: right;
 }
+
+.file-tab {
+    background-image: url(img/ic_menu_archive.png)
+}
+
+.log-tab {
+    background-image: url(img/ic_menu_clear_playlist.png)
+}
+
+.screen-tab {
+    background-image: url(img/ic_menu_camera.png)
+}
+
+.status-tab {
+    background-image: url(img/ic_menu_find.png)
+}
+
+.mmap-tab {
+    background-image: url(img/ic_menu_sort_by_size.png)
+}
+
+.fdesc-tab {
+    background-image: url(img/ic_menu_selectall_holo_light.png)
+}
+
+.command-tab {
+    background-image: url(img/ic_menu_preferences.png)
+}

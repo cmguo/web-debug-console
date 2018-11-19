@@ -105,5 +105,6 @@ var FilePanel = function(c) {
 Ext.extend(FilePanel, Ext.Panel, {
     title: '存储',
     layout: 'border',
+    iconCls: "file-tab"
 });
 

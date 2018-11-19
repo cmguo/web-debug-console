@@ -96,6 +96,7 @@ var FdescPanel = function(c) {
 
 Ext.extend(FdescPanel, Ext.grid.GridPanel, {
     title: '描述符', 
+    iconCls: "fdesc-tab",
     listeners: {
         activate: function() {
             this.store.load({});
