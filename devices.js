@@ -404,36 +404,12 @@ var devicePanel = new Ext.tree.TreePanel({
                 contentPanel.setActiveTab(node.attributes.panel);
                 return;
             }
-            var panel;
-            if (node.attributes.type == 'endpoint') {
-                panel = new EndpointPanel({
+            var panel = panels[node.attributes.type];
+            if (typeof panel == "function") {
+                panel = new panel({
                     title: node.attributes.text, 
                     closable: true,
                     datasrc: node.attributes
-                });
-            } else if (node.attributes.type == 'log') {
-                panel = new LogPanel({
-                    title: node.attributes.name, 
-                    closable: true,
-                    store: new TextLogStore({
-                        datasrc: node.attributes
-                    })
-                });
-            } else if (node.attributes.type == 'trace') {
-                panel = new TracePanel({
-                    title: node.attributes.name, 
-                    closable: true,
-                    store: new TraceStore({
-                        datasrc: node.attributes
-                    })
-                });
-            } else if (node.attributes.type == 'mmap') {
-                panel = new MmapPanel({
-                    title: node.attributes.name, 
-                    closable: true,
-                    store: new MmapStore({
-                        datasrc: node.attributes
-                    })
                 });
             }
             if (panel) {

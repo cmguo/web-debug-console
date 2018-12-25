@@ -12,10 +12,12 @@ var EndpointTab = function(c) {
         items: [
             new LogPanel(Ext.apply({
                 step: 0, 
+                store: new StreamLogStore(c)
             }, c)),
             new StatusPanel(c), 
             //new FilePanel(c), 
-            new File2Panel(c), 
+            new FilesPanel(c), 
+            new PackagePanel(c),
             new MmapPanel(c), 
             new FdescPanel(c), 
             new JTracePanel(c), 

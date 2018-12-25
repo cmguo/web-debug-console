@@ -91,7 +91,7 @@ Ext.override(Ext.grid.filter.Filter, {
 Ext.grid.filter.List2Filter = ListFilter;
 
 var LogPanel = function(c) {
-    var store = c.store || new StreamLogStore(c);
+    var store = c.store || new TextLogStore(c);
     var colMod = new Ext.grid.ColumnModel({
         defaultSortable: false, 
         columns: [{

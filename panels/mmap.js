@@ -2,9 +2,9 @@
 
 var MmapPanel = function(c) {
     var store = c.store || new MmapStore(Ext.applyIf({
-        datasrc: Ext.applyIf({
+        datasrc: Ext.applyIf(c.datasrc.type == "endpoint" ? {
             url: c.datasrc.url + "file.get?_=/proc/self/smaps"
-        }, c.datasrc)
+        } : {}, c.datasrc)
     }, c));
     var view = new Ext.grid.GroupingView(Ext.apply({
         forceFit: true,
@@ -84,16 +84,7 @@ var MmapPanel = function(c) {
             paramName: "lines"
         })
     ];
-    if (c.path) {
-        tbar.push({
-            xtype: "button", 
-            text: "刷新", 
-            handler: function() {
-                store.reload();
-            }
-        });
-    }
-    if (c.datasrc) {
+    if (c.datasrc.type == 'endpoint') {
         tbar.push({
             xtype: "button", 
             text: "刷新", 
