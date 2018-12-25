@@ -1,4 +1,4 @@
-// data/log/FdescReader.js
+// data/file/FdescReader.js
 
 var FdescRecord = Ext.data.Record.create([
     'name', 

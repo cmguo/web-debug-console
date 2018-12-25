@@ -1,4 +1,4 @@
-// data/log/FlstReader.js
+// data/file/FlstReader.js
 
 var FlstRecord = Ext.data.Record.create([
     'name', 
@@ -10,13 +10,22 @@ var FlstRecord = Ext.data.Record.create([
     'symlink',
 ]);
 
-var FlstReader = Ext.extend(DataReader, {
+var FlstReader = function(c) {
+    c = Ext.apply(c, {
+        fields: c.fields || FlstRecord
+    });
+    FlstReader.superclass.constructor.call(this, c, c.fields);
+};
+
+Ext.extend(FlstReader, DataReader, {
     fields: FlstRecord, 
     readRecord: function(line) {
         var file = {};
         var pos = 0;
         file.line = line;
         file.mode = line.substring(pos, pos + 10); pos += 11;
+        file.user = line.substring(pos, pos + 10).trim(); pos += 11;
+        file.group = line.substring(pos, pos + 10).trim(); pos += 11;
         file.size = parseInt(line.substring(pos, pos + 10).trim()); pos += 11;
         file.timestamp = new Date(line.substring(pos, pos + 23));
         file.date = line.substring(pos, pos + 10); pos += 11;

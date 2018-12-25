@@ -167,6 +167,12 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
     font-size:12px !important ;
 }
 
+.x-form-field {
+    font-family: 'Courier New';
+    white-space: pre !important;
+    font-size:12px !important ;
+}
+
 .log-2 { /* trace */
     color: gray;
 }
@@ -217,6 +223,20 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
 
 .fdesc-tab {
     background-image: url(img/ic_menu_selectall_holo_light.png)
+}
+
+.file-file {
+    padding-left: 17px !important;
+    background-image: url(img/leaf.gif);
+    background-repeat: no-repeat; 
+    background-position: left;
+}
+
+.file-folder {
+    padding-left: 17px !important;
+    background-image: url(img/folder.gif);
+    background-repeat: no-repeat; 
+    background-position: left;
 }
 
 .command-tab {

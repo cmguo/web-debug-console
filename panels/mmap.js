@@ -17,7 +17,7 @@ var MmapPanel = function(c) {
                   '<p>{.}</p>',
                   '</tpl>'),
         getRowClass: function(record) {
-            var cls = Ext.grid.RowExpander.prototype.getRowClass.apply(this, arguments );
+            var cls = Ext.grid.RowExpander.prototype.getRowClass.apply(this, arguments);
             if (record.data.heldBy)
                 cls += record.data.heldBy == record.data ? " log-5" : " log-6";
             return cls;

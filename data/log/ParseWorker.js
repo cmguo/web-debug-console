@@ -8,6 +8,7 @@ importScripts("parser/LogcatBriefParser.js");
 importScripts("parser/FrameworkCppParser.js");
 importScripts("parser/GLibParser.js");
 importScripts("parser/LogcatUnknownParser1.js");
+importScripts("parser/LogcatUnknownParser2.js");
 
 self.addEventListener('message', function (event) {
     var data = event.data;

@@ -8,7 +8,7 @@ var jiraOptions = {
     }, 
     "newjira.cnsuning.com": {
         headers: {
-            Authorization: "Basic MTYwOTE4ODA6V0FMbHBhcGVyMTIzNDU2Nw=="
+            Authorization: "Basic MTYwOTE4ODA6V0FMTHBhcGVyMTIzNDU2Nw=="
         }
     }
 }
@@ -216,7 +216,7 @@ var deviceLoader = {
                 thiz.sort(node);
                 callback(this, node);
             }
-        }, node.attributes.opts));
+        }, jiraOptions[node.attributes.host]));
     }, 
 
     sort: function(node) {
@@ -343,7 +343,7 @@ var deviceLoader = {
         var node = {
             text: id, 
             type: type,
-            opts: jiraOptions[host], 
+            host: host, 
             url: path
         };
         devicePanel.getRootNode().appendChild(this.createNode(node));
@@ -357,6 +357,8 @@ var deviceLoader = {
         } else if (name.endsWith(".rar")) {
             return "[rar]";
         } else if (name.startsWith("traces.")) {
+            return "trace";
+        } else if (name.startsWith("tombstone")) {
             return "trace";
         } else if (name.endsWith("maps")) {
             return "mmap";

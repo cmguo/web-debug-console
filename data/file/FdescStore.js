@@ -1,4 +1,4 @@
-// data/log/FdescStore.js
+// data/file/FdescStore.js
 
 var FdescStore = function(c) {
     FdescStore.superclass.constructor.call(this, Ext.apply({

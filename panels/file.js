@@ -67,6 +67,7 @@ Ext.extend(FileTree, Ext.tree.ColumnTree, {
             text: '刷新'
         }, {
             id: 'get', 
+            scope: this, 
             text: '另存为'
         }, {
             id: 'remove', 
@@ -81,9 +82,8 @@ Ext.extend(FileTree, Ext.tree.ColumnTree, {
                         break;
                 }
             }
-        }
-    }),
-
+        }, 
+    })
 });
 
 var FilePanel = function(c) {
