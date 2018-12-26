@@ -20,6 +20,9 @@ var LogReader = function(c) {
 
 Ext.extend(LogReader, DataReader, {
     read: function(data, response) {
+        if (!response) {
+            return this.readRecords(this.parser.parseAll(data));
+        }
         var callback = function(state) {
             if (state.msg) {
                 LoadingWindow.setProcess(state);

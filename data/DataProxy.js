@@ -47,6 +47,6 @@ Ext.extend(HttpProxy, DataProxy, {
             success: function(response) {
                 callback(response.responseText);
             }
-        }, this.options));
+        }, this.opts));
     }
 });

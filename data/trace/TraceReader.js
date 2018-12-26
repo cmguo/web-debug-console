@@ -19,8 +19,10 @@ var TraceReader = function(c) {
 };
 
 Ext.extend(TraceReader, DataReader, {
-    readData: function(data) {
-        var lines = data.split('\n');
+    readLines: function(lines) {
+        if (lines.length == 0 || typeof lines[0] == 'object') {
+            return lines;
+        }
         var process = [];
         var threads = [];
         var glob = {

@@ -18,10 +18,10 @@ var MmapReader = function(c) {
 };
 
 Ext.extend(MmapReader, DataReader, {
-    readData: function(data) {
-        var lines = data.split('\n');
+    readLines: function(lines) {
         var mmaps = [];
         var mmap = null;
+        var stone = 0;
         lines.forEach(function(line) {
             if (line == "")
                 return;
@@ -34,7 +34,7 @@ Ext.extend(MmapReader, DataReader, {
                     attrs: {}
                 };
                 mmaps.push(m);
-                var tokens = line.split(/ +/, 6);
+                var tokens = line.split2(/ +/g, 6);
                 m.line = line;
                 m.addr = tokens[0];
                 var addrs = tokens[0].split("-", 2);
@@ -57,7 +57,44 @@ Ext.extend(MmapReader, DataReader, {
                 m.minor = parseInt(device[1], 16);
                 m.fileno = parseInt(tokens[4]);
                 m.filename = tokens[5];
-            } else {
+            } else if (line.startsWith("  ")) {
+                // from tombstone
+                if (stone == 0) {
+                    var t = line.split2(/ +/g, 6);
+                    if (/^[0-9a-f]+$/.test(t[4])) {
+                        stone = 6;
+                    } else {
+                        stone = 5;
+                    }
+                }
+                var tokens = line.split2(/ +/g, stone);
+                var addrs = tokens[1].split("-", 2);
+                mmaps.push({
+                    line: line, 
+                    addr: tokens[1], 
+                    saddr: parseInt(addrs[0], 16),
+                    eaddr: parseInt(addrs[1], 16),
+                    modestr: tokens[2], 
+                    offsetstr: stone == 5 ? '' : tokens[3],
+                    offset: stone == 5 ? -1 : parseInt(tokens[3], 16),
+                    size: stone == 5 ? parseInt(tokens[3]) : parseInt(tokens[4], 16),
+                    filename: stone == 5 ? tokens[4] : tokens[5]
+                });
+            } else if (line.startsWith("--->")) {
+                // from tombstone
+                // "--->Fault address falls at fb1bd180 between mapped regions"
+                var tokens = line.split2(/ +/g, 6);
+                var addr = parseInt(tokens[4], 16);
+                mmaps.push({
+                    line: line, 
+                    addr: tokens[4], 
+                    saddr: addr,
+                    eaddr: addr,
+                    modestr: "---", 
+                    size: 0,
+                    filename: line.substring(4)
+                });
+           } else {
                 m.lines.push(line);
                 var tokens = line.split(/: +/, 2);
                 if (tokens[1].endsWith(" kB")) {

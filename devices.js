@@ -191,6 +191,7 @@ var deviceLoader = {
 
     loadJira: function(node, callback) {
         var thiz = this;
+        var opts = jiraOptions[node.attributes.host];
         Ext.Ajax.request(Ext.apply({
             url: node.attributes.url, 
             disableCaching: false, 
@@ -210,13 +211,13 @@ var deviceLoader = {
                         name: a.filename,
                         type: type, 
                         url: url.toString(), 
-                        opts: node.attributes.opts
+                        opts: opts
                     }));
                 }.bind(this));
                 thiz.sort(node);
                 callback(this, node);
             }
-        }, jiraOptions[node.attributes.host]));
+        }, opts));
     }, 
 
     sort: function(node) {
@@ -359,7 +360,7 @@ var deviceLoader = {
         } else if (name.startsWith("traces.")) {
             return "trace";
         } else if (name.startsWith("tombstone")) {
-            return "trace";
+            return "stone";
         } else if (name.endsWith("maps")) {
             return "mmap";
         } else {

@@ -17,6 +17,9 @@ var LogParser = function(c) {
 
 LogParser.prototype = {
     parseAll: function(data, callback) {
+        if (!callback) {
+            callback = function() {};
+        }
         var state = {
             msg: "分析日志...", 
             total: 1, 
@@ -26,7 +29,7 @@ LogParser.prototype = {
             count: 0
         };
         callback(state);
-        var lines = data.split(/\r?\n/);
+        var lines = (typeof data == 'string') ? data.split(/\r?\n/) : data;
         state.total = lines.length;
         state.step = lines.length / 100;
         var items = [];
@@ -48,6 +51,7 @@ LogParser.prototype = {
             }
         }
         callback({ result: items });
+        return items;
     },
     parse: function(line) {
         this.parseState.lines = this.parseState.lines.concat(line);

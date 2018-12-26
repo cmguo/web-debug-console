@@ -17,6 +17,7 @@ var panels = {
     files: FilesPanel,
     fdesc: FdescPanel,
     mmap: MmapPanel,
+    stone: StonePanel,
     screen: ScreenPanel,
     command: CommandPanel,
     package: PackagePanel,

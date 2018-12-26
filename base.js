@@ -1,3 +1,18 @@
+
+String.prototype.split2 = function split(sep, n) {
+    var out = [];
+    while (--n) {
+        var l = sep.lastIndex;
+        var m = sep.exec(this);
+        if (m == null) {
+            break;
+        }
+        out.push(this.slice(l, m.index));
+    }
+    out.push(this.slice(sep.lastIndex));
+    return out;
+}
+
 var ipAddress = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 Ext.apply(Ext.form.VTypes, {
     'ip' : function (v) {

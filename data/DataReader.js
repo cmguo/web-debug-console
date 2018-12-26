@@ -6,7 +6,10 @@ var DataReader = Ext.extend(Ext.data.DataReader, {
         return this.readRecords(records);
     }, 
     readData: function(data) {
-        var lines = data.split('\n');
+        var lines = Array.isArray(data) ? data : data.split('\n');
+        return this.readLines(lines);
+    },
+    readLines: function(lines) {
         var records = [];
         lines.forEach(function(line) {
             if (line == "") return;
