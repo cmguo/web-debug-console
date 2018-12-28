@@ -43,6 +43,7 @@ LogParser.prototype = {
             if (line == "") continue;
             try {
                 var result = this.parse(line);
+                //result.tid = items.length;
                 items = items.concat(result);
             } catch (err) {
                 error.line = line;

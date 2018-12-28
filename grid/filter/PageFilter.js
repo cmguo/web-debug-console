@@ -11,7 +11,8 @@ Ext.grid.filter.PageFilter = Ext.extend(Ext.grid.filter.Filter, {
     start: 0, 
     end: -1, 
     step: 100, 
-    count: 0,
+    total: 0,
+    items: [],
 
 	init: function(grid) {
         if (grid === undefined) {
@@ -21,11 +22,17 @@ Ext.grid.filter.PageFilter = Ext.extend(Ext.grid.filter.Filter, {
             this.active = this.isActivatable();
         } else if (grid instanceof Ext.grid.GridPanel) {
             this.grid = grid;
-            this.parter = new Ext.grid.filter.PageFilter();
-            grid.filters.addFilter(this.parter);
+            var parter = new Ext.grid.filter.Filter({
+                active: true, 
+                validateRecord: function(record) {
+                    return this.validateRecord2(record);
+                }.bind(this)
+            });
+            grid.filters.addFilter(parter);
             grid.store.on("beforeload", this.reset.bind(this));
             grid.on("filterupdate", this.reset.bind(this));
             grid.on("bodyscroll", this.onScroll.bind(this));
+            grid.getView().on("refresh", this.scrollView.bind(this));
         }
 	},
 	
@@ -38,14 +45,19 @@ Ext.grid.filter.PageFilter = Ext.extend(Ext.grid.filter.Filter, {
 		return this.start > 0 || this.end > this.start;
 	},
 
-    more: function(value) {
-        if (this.count == this.end)
+    more: function(down) {
+        if (down && this.items.length == this.end) {
             this.setValue({end: this.end + this.step});
+        } else if (!down && this.start > 0) {
+            this.setValue({start: this.start > this.step ? this.start - this.step : 0});
+        }
     },
 	
 	setValue: function(value) {
-        if (value.start !== undefined)
+        if (value.start !== undefined) {
             this.start = value.start;
+            this.moreFirst = 0;
+        }
         if (value.end !== undefined)
             this.end = value.end;
         this.fireUpdate();
@@ -65,35 +77,138 @@ Ext.grid.filter.PageFilter = Ext.extend(Ext.grid.filter.Filter, {
 	},
 	
     reset: function(filters, filter) {
-        this.count = 0;
-        if (this.parter)
-            this.parter.reset();
-        if (filter === this)
+        this.total = 0;
+        this.lasts = this.items;
+        this.items = [];
+        if (filter === this) {
             return;
+        }
+        var first = this.firstVisible();
+        this.moreFirst = this.lasts[this.start + first];
+        this.lasts = [];
         if (this.step > 0) {
             this.start = 0;
-            this.end = this.step;
+            this.moreStart = this.start;
+            this.end = this.start + this.step;
         }
     },
 
-	validateRecord: function(record) {
-        if (!this.parter) {
-            ++this.count;
-            return true;
+    validateRecord2: function(record) {
+        this.items.push(this.total - 1);
+        if (this.total <= this.moreFirst) {
+            ++this.start;
+            this.moreStart = this.start;
+            ++this.end;
+            return false;
         }
-        this.count = this.parter.count;
-        return this.count >= this.start && (this.end < 0 || this.count < this.end);
-	},
+        return this.items.length > this.start;
+    }, 
+
+	validateRecord: function(record) {
+        if (this.lasts.length > 0) {
+            if (this.total++ < this.lasts[0]) {
+                return false;
+            }
+            this.lasts.shift();
+        } else {
+            ++this.total;
+        }
+        return this.end < 0 || this.items.length < this.end;
+    },
+    
+    validateRecord2: function(record) {
+        this.items.push(this.total - 1);
+        if (this.total <= this.moreFirst) {
+            ++this.start;
+            this.moreStart = this.start;
+            ++this.end;
+            return false;
+        }
+        return this.items.length > this.start;
+    }, 
+
+    scroll: 0,
+
+    scrollView: function() {
+        var offset;
+        if (this.moreStart > this.start) {
+            offset = this.moreStart - this.start;
+            this.moreStart = this.start;
+        } else if (this.moreFirst) {
+            var first = this.moreFirst;
+            this.moreFirst = 0;
+            offset = this.binarySearch(this.items, function(v) {
+                return v >= first;
+            }) - this.start;
+        }
+        if (typeof offset == 'number') {
+            var view = this.grid.view;
+            var lTop = Ext.fly(view.getRow(0)).getTop();
+            var rTop = Ext.fly(view.getRow(offset)).getTop();
+            view.scroller.dom.scrollTop = rTop - lTop;
+        }
+    },  
 
     onScroll: function(scrollLeft, scrollTop) {
         var count = this.grid.store.getCount();
         if (count == 0)
             return;
         var view = this.grid.view;
-        var vTop = view.el.getTop();
-        var vBottom = view.el.getBottom();
-        var lTop = Ext.fly(view.getRow(count - 1)).getTop();
-        if (lTop < vBottom + (vBottom - vTop) / 2)
-            this.more();
+        var height = view.el.getHeight();
+        var top = Ext.fly(view.getRow(0)).dom.offsetTop;
+        var bottom = Ext.fly(view.getRow(count - 1)).dom.offsetTop + 
+            Ext.fly(view.getRow(count - 1)).dom.offsetHeight;
+        var height1 = height / 2;
+        var height2 = bottom - top - height * 1.5;
+        if (this.scroll < height2 && height2 < scrollTop) {
+            this.more(true);
+        } else if (scrollTop < height1 && height1 < this.scroll || scrollTop == 0) {
+            this.more(false);
+        }
+        this.scroll = scrollTop;
+    }, 
+
+    firstVisible: function() {
+        var count = this.grid.store.getCount();
+        if (count == 0)
+            return;
+        var view = this.grid.view;
+        var height = view.el.getHeight();
+        var top = Ext.fly(view.getRow(0)).dom.offsetTop;
+        var bottom = Ext.fly(view.getRow(count - 1)).dom.offsetTop;
+        var first = 0;
+        var last = count - 1;
+        var vf = Ext.fly(view.getRow(first)).dom;
+        while (vf.offsetTop + vf.offsetHeight < this.scroll || vf.offsetTop > this.scroll) {
+            if (vf.offsetTop > 0) {
+                var diff = Math.floor((vf.offsetTop + vf.offsetHeight - this.scroll) 
+                    * (last - first) / (bottom - vf.offsetTop));
+                if (diff == 0) diff = 1;
+                first = first > diff ? first - diff : 0;
+                vf = Ext.fly(view.getRow(first)).dom;
+            } else {
+                var diff = Math.floor((this.scroll - vf.offsetTop) 
+                    * (last - first) / (bottom - vf.offsetTop));
+                if (diff == 0) diff = 1;
+                first += diff;
+                if (first > last) first = last;
+                vf = Ext.fly(view.getRow(first)).dom;
+            }
+        }
+        return first;
+    },
+
+    binarySearch: function(array, pred) {
+        let lo = -1, hi = array.length;
+        while (1 + lo < hi) {
+            const mi = lo + ((hi - lo) >> 1);
+            if (pred(array[mi])) {
+                hi = mi;
+            } else {
+                lo = mi;
+            }
+        }
+        return hi;
     }
+
 });
