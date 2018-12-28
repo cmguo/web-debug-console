@@ -71,16 +71,11 @@ var FileList = function(c) {
             handler: function() {
                 this.changeDirectory(this.getPath());
             }
-        }, {
-            xtype: "label", 
-            id: "path",
-            text: "/",
-            width: 320
         }
     ];
     FileList.superclass.constructor.call(this, Ext.apply({
-        region: 'center',
-        bodyBorder: false,
+        title: '目录 - /',
+        collapsible: true,
         autoWidth: true, 
         enableColumnHide: false, 
         enableColumnMove: false, 
@@ -128,10 +123,10 @@ Ext.extend(FileList, Ext.grid.GridPanel, {
                 var record = item.parentMenu.contextNode;
                 switch (item.id) {
                     case 'remove':
-                        grid.removeFile(this.getPath(record));
+                        grid.removeFile(grid.getPath(record));
                         break;
                     case 'get':
-                        grid.saveFile(this.getPath(record), 
+                        grid.saveFile(grid.getPath(record), 
                                 record.get("mode").startsWith('d'));
                         break;
                 }
@@ -139,8 +134,7 @@ Ext.extend(FileList, Ext.grid.GridPanel, {
         }, 
     }),
     getPath: function(row) {
-        var pathLabel = this.getTopToolbar().items.get(5);
-        var path = pathLabel.text;
+        var path = this.title.substring(5);
         if (typeof row == 'undefined') {
             path = path.replace(/\/+[^\/]+$/, "");
             if (path == '') path = '/';
@@ -154,14 +148,13 @@ Ext.extend(FileList, Ext.grid.GridPanel, {
         return path;
     },
     changeDirectory: function(path) {
-        var pathLabel = this.getTopToolbar().items.get(5);
-        pathLabel.setText(path);
+        this.setTitle('目录 - ' + path);
         this.store.proxy.url = this.store.proxy.url.replace(/_=.+/, 
                 "_=" + encodeURIComponent(path));
         this.store.reload();
     },
     saveFile: function(path, directory) {
-        var name = path.replaceAll(/.+\//, "");
+        var name = path.replace(/.*\//g, "");
         var url = this.store.proxy.url.replace(/list\?.+/, "get?_="
                 + encodeURIComponent(path));
         if (directory) {
@@ -191,44 +184,80 @@ Ext.extend(FileList, Ext.grid.GridPanel, {
             store.reload();
         })
     },
-    getPreviewContent: function(row, callback) {
+    getPreview: function(row, callback) {
         if (typeof row == 'number') {
             row = this.store.getAt(row);
         }
-        if (row.get('size') > 100 * 1024) {
-            callback('File too large to preview');
-            return;
-        }
+        var name = row.get('name');
+        var type = deviceLoader.getType(name);
         var dir = row.get("mode").startsWith('d');
         var url = this.store.proxy.url;
         var path = this.getPath(row);
-        url = (dir ? url.replace(/_=.+/, "_=") : url.replace(/list\?.+/, "get?_=")) 
-                + encodeURIComponent(path);
-        fetch(url).then(res => {
-            res.text().then(text => {
-                callback(text)
+        if (dir) {
+            url = url.replace(/_=.+/, "_=");
+            type = 'text';
+        } else {
+            url = url.replace(/list\?.+/, "get/" + name +  "?_=");
+        }
+        url += encodeURIComponent(path);
+        if (type == 'binary') {
+            if (row.get('size') <= 100 * 1024) {
+                type = 'text';
+            }
+        }
+        callback(type, url);
+    }
+});
+
+var PreviewPanel = function(c) {
+    PreviewPanel.superclass.constructor.call(this, Ext.apply({
+        items: [{
+            xtype: 'label', 
+            text: '预览'
+        }]
+    }, c));
+}
+
+Ext.extend(PreviewPanel, Ext.Panel, {
+    layout:'card',
+    iconCls: "screen-tab",
+    activeItem: 0,
+    setPreview: function(type, url) {
+        var panel = panels[type];
+        if (typeof panel == 'function') {
+            panel = new panel({
+                header: false,
+                datasrc: {
+                    url: url
+                }
             });
-        });
+        }
+        if (panel == null) {
+            panel = new Ext.Panel({
+                html: '<div><a href=\"' + url + '\" target=\"_blank\">' + url + '</a></div>'
+            })
+        }
+        this.add(panel);
+        this.remove(this.items.get(0));
+        this.layout.setActiveItem(0);
+        panel.fireEvent('activate', panel);
     }
 });
 
 var FilesPanel = function(c) {
-    FilesPanel.superclass.constructor.call(this, Ext.apply({
-        items: [
-            new FileList(Ext.apply({
-                region: 'west', 
-                width: 560,
-            }, c)), {
-                xtype: 'textarea',
-                itemId: 'file-output',
-                region: 'center',
-                border: true,
-                emptyText: '预览'
-            }
-        ]
+    var list = new FileList(Ext.apply({
+        region: 'west', 
+        width: 560,
     }, c));
-    this.items.get(0).on("rowclick", function(grid, row) {
-        this.items.get(1).setRawValue('');
+    var preview = new PreviewPanel(Ext.apply({
+        region: 'center',
+        border: true,
+    }));
+    FilesPanel.superclass.constructor.call(this, Ext.apply({
+        items: [list, preview]
+    }, c));
+    list.on("rowclick", function(grid, row) {
+        preview.setPreview('text', '预览');
         console.log("preview");
         if (this.previewDelayed) {
             clearTimeout(this.previewDelayed);
@@ -236,12 +265,12 @@ var FilesPanel = function(c) {
         }
         this.previewDelayed = setTimeout(function() {
             console.log("preview2");
-            this.items.get(0).getPreviewContent(row, function(content) {
-                this.items.get(1).setRawValue(content);
+            list.getPreview(row, function(type, url) {
+                preview.setPreview(type, url);
             }.bind(this));
         }.bind(this), 1000);
     }.bind(this));
-    this.items.get(0).on("rowdblclick", function() {
+    list.on("rowdblclick", function() {
         console.log("cancel");
         if (this.previewDelayed) {
             clearTimeout(this.previewDelayed);

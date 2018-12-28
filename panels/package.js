@@ -96,6 +96,6 @@ var PackagePanel = function(c) {
 }
 
 Ext.extend(PackagePanel, Ext.Panel, {
-    title: '目录',
+    title: '应用',
     layout: 'border'
 });

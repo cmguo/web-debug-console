@@ -1,19 +1,26 @@
 // data/DataStore.js
 
 var DataStore = function(c) {
-    var proxy = c.proxy;
-    if (c.datasrc && !proxy) {
-        if (c.datasrc.file)
-            proxy = new FileProxy(c);
-        else if (c.datasrc.entry)
-            proxy = new EntryProxy(c);
-        else if (c.datasrc.url)
-            proxy = new HttpProxy(c);
-    }
     DataStore.superclass.constructor.call(this, Ext.apply({
         reader: c.reader || this.createReader(c),
-        proxy: proxy
+        proxy: DataStore.createProxy(c)
     }, c));
+}
+
+DataStore.createProxy = function(c) {
+    if (c.proxy) {
+        return c.proxy;
+    } else if (!c.datasrc) {
+        return null;
+    } else if (c.datasrc.file) {
+        return new FileProxy(c);
+    } else if (c.datasrc.entry) {
+        return new EntryProxy(c);
+    } else if (c.datasrc.url) {
+        return new HttpProxy(c);
+    } else {
+        return null;
+    }
 }
 
 Ext.extend(DataStore, Ext.data.GroupingStore, {

@@ -363,8 +363,10 @@ var deviceLoader = {
             return "stone";
         } else if (name.endsWith("maps")) {
             return "mmap";
-        } else {
+        } else if (/\.log/.test(name)) {
             return "log";
+        } else {
+            return "binary";
         }
     },
 

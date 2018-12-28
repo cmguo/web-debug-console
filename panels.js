@@ -21,6 +21,7 @@ var panels = {
     screen: ScreenPanel,
     command: CommandPanel,
     package: PackagePanel,
+    text: TextPanel,
     blank: blankPanel
 }
 
