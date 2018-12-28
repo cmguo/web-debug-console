@@ -44,9 +44,10 @@ Ext.extend(StoneReader, DataReader, {
                     glob.lines.push(line);
                     result.proc = {
                         lines: [], 
-                        pid: tokens[0] + ' ' + tokens[1],
-                        name: tokens[2].substring(tokens[2].indexOf('>>>', 6) + 4, tokens[2].length - 4),
-                        cmdline: tokens[2]
+                        pid: tokens[0].substring(4),
+                        name: tokens[2].substring(
+                            tokens[2].indexOf('>>>', 6) + 4, tokens[2].length - 4),
+                        cmdline: tokens[1] + ' ' + tokens[2]
                     }
                 }
                 var tid = parseInt(tokens[1].substring(5));
@@ -61,6 +62,8 @@ Ext.extend(StoneReader, DataReader, {
             } else if (line.startsWith("signal ")) {
                 glob.lines.push(line);
                 result.proc.time = line;
+            } else if (line.startsWith("    #00 pc")) {
+                thread.top = line.substring(4);
             } else if (line.startsWith("memory map")) {
                 thread = null;
                 memorys = result.memorys;

@@ -358,7 +358,7 @@ var deviceLoader = {
         } else if (name.endsWith(".rar")) {
             return "[rar]";
         } else if (name.startsWith("traces.")) {
-            return "trace";
+            return "jtrace";
         } else if (name.startsWith("tombstone")) {
             return "stone";
         } else if (name.endsWith("maps")) {

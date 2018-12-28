@@ -96,7 +96,7 @@ Ext.extend(TraceReader, DataReader, {
                     thread.topl = 3;
                 }
             } else if (line.startsWith("  - waiting")) {
-                thread.wait = line.substring(16);
+                thread.wait = line.substring(4);
                 var h = line.indexOf("held by ");
                 if (h > 0) {
                     h = line.substring(h + 8);

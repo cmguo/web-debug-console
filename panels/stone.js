@@ -16,7 +16,9 @@ var StoneTab = function(c) {
         new LogPanel({title: '日志(S)', record: 'logsystem', datasrc: {}}),
         new LogPanel({title: '日志(M)', record: 'logmain', datasrc: {}}),
         new MmapPanel({record: 'memorys', datasrc: {}}), 
-        new TracePanel({record: 'threads', datasrc: {}})
+        new TracePanel({record: 'threads', datasrc: {}, viewConfig: {
+            startCollapsed: false
+        }})
     ];
     StoneTab.superclass.constructor.call(this, Ext.apply({
         items: items

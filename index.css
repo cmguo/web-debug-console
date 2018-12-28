@@ -209,6 +209,10 @@ body.ux-layout-center {           /* if the container is the doc body (for viewp
     background-image: url(img/ic_menu_clear_playlist.png)
 }
 
+.trace-tab {
+    background-image: url(img/equals.png)
+}
+
 .screen-tab {
     background-image: url(img/ic_menu_camera.png)
 }

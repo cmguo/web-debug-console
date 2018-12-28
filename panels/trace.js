@@ -34,43 +34,49 @@ var TracePanel = function(c) {
             return cls;
         }
     });
-    var colMod = new Ext.grid.ColumnModel({
-        defaultSortable: false, 
-        columns: [expander, {
-            dataIndex: 'proc', 
-            header : '进程', 
-            width: 30,
-            renderer: function(proc) {
-                return proc.pid;
-            },
-            groupRenderer: function(proc) {
-                return proc.pid + " " + proc.cmdline + " " + proc.time;
-            }
-        }, {
+    var columns = [expander, {
+        dataIndex: 'proc', 
+        header : '进程', 
+        width: 30,
+        renderer: function(proc) {
+            return proc.pid;
+        },
+        groupRenderer: function(proc) {
+            return proc.pid + " " + proc.cmdline + " " + proc.time;
+        }
+    }, {
+        dataIndex: 'sysTid', 
+        header : 'Tid', 
+        width: 30
+    }, {
+        dataIndex: 'name', 
+        header : '名称', 
+        width: 100
+    }, {
+        dataIndex: 'top', 
+        header: '栈顶', 
+        width: 300
+    }];
+    if (c.datasrc.type == 'jtrace') {
+        columns.splice(2, 0, {
             dataIndex: 'tid', 
             header : '线程', 
             width: 30
-        }, {
-            dataIndex: 'sysTid', 
-            header : 'Tid', 
-            width: 30
-        }, {
-            dataIndex: 'name', 
-            header : '名称', 
-            width: 100
-        }, {
+        })
+        columns.splice(5, 0,  {
             dataIndex: 'state', 
             header : '状态', 
             width: 30
-        }, {
-            dataIndex: 'top', 
-            header: '栈顶', 
-            width: 300
-        }, {
+        });
+        columns.push({
             dataIndex: 'wait', 
             header: '等待', 
             width: 200
-        }]
+        });
+    }
+    var colMod = new Ext.grid.ColumnModel({
+        defaultSortable: false, 
+        columns: columns
     });
     var tbar = [
         '搜索: ', ' ',
@@ -108,6 +114,7 @@ var TracePanel = function(c) {
         region: 'center',
         bodyBorder: false,
         autoWidth: true, 
+        iconCls: "trace-tab",
         enableColumnHide: false, 
         enableColumnMove: false, 
         store: store, 
@@ -132,7 +139,8 @@ Ext.extend(TracePanel, Ext.grid.GridPanel, {
 var JTracePanel = Ext.extend(TracePanel, {
     title: '栈(J)', 
     constructor: function(c) {
-        JTracePanel.superclass.constructor.call(this, Ext.apply({
+        JTracePanel.superclass.constructor.call(this, Ext.applyIf({
+            datasrc: Ext.applyIf({type: 'jtrace'}, c.datasrc),
             path: "trace?o="
         }, c));
     }
@@ -141,7 +149,8 @@ var JTracePanel = Ext.extend(TracePanel, {
 var NTracePanel = Ext.extend(TracePanel, {
     title: '栈(N)', 
     constructor: function(c) {
-        NTracePanel.superclass.constructor.call(this, Ext.apply({
+        NTracePanel.superclass.constructor.call(this, Ext.applyIf({
+            datasrc: Ext.applyIf({type: 'ntrace'}, c.datasrc),
             path: "nativetrace?o="
         }, c));
     }
