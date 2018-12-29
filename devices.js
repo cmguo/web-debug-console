@@ -1,7 +1,7 @@
 // devices.js
 
 var rpc = { loaded: function() {} };
-RPC.new("./worker.js", rpc).then(function(r) {
+RPC.new("libunrar/worker.js", rpc).then(function(r) {
     rpc = r;
 });
 
