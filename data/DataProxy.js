@@ -23,7 +23,14 @@ Ext.extend(FileProxy, DataProxy, {
             response(e.target.result);
         };
         reader.readAsText(this.file)
-    }
+    }, 
+    loadAsUrl: function(response) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            response(e.target.result);
+        };
+        reader.readAsDataURL(this.file)
+    }, 
 });
 
 var EntryProxy = function(c) {
@@ -33,6 +40,9 @@ var EntryProxy = function(c) {
 Ext.extend(EntryProxy, DataProxy, {
     loadData: function(callback) {
         this.entry.getText(callback);
+    }, 
+    loadAsUrl: function(callback) {
+        this.entry.getDataUrl(callback);
     }
 });
 
@@ -48,5 +58,8 @@ Ext.extend(HttpProxy, DataProxy, {
                 callback(response.responseText);
             }
         }, this.opts));
+    }, 
+    loadAsUrl: function(callback) {
+        callback(this.url);
     }
 });

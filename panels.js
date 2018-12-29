@@ -22,6 +22,7 @@ var panels = {
     command: CommandPanel,
     package: PackagePanel,
     text: TextPanel,
+    image: ImagePanel,
     blank: blankPanel
 }
 

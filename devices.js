@@ -12,26 +12,15 @@ function clickElem(elem) {
     elem.dispatchEvent(eventMouse)
 }
 
-function jsonp(url, callback) {
-    var callbackName = 'jsonp_callback_' + Math.round(100000 * Math.random());
-    window[callbackName] = function(data) {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        callback(data);
-    };
-
-    var script = document.createElement('script');
-    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + callbackName;
-    document.body.appendChild(script);
-}
-
 var deviceLoader = {
 
     saveRoot: function(node) {
         var devices = [];
         node.childNodes.forEach(function(n) {
-            if (!n.attributes.file)
+            if (!n.attributes.file) {
+                delete n.attributes.id;
                 devices.push(n.attributes);
+            }
         });
         window.localStorage.devices = Ext.util.JSON.encode(devices);
     },
@@ -79,8 +68,14 @@ var deviceLoader = {
                 callback(text);
             });
         }
+        var getDataUrl = function(callback) {
+            this.getData(new zip.BlobWriter(), function(blob) {
+                callback(URL.createObjectURL(blob));
+            });
+        }
         var rec = function(entry) {
             entry.getText = getText;
+            entry.getDataUrl = getDataUrl;
             var type = this.getType(entry.filename);
             var device = new Ext.tree.TreeNode({
                 text: entry.filename, 
@@ -107,9 +102,13 @@ var deviceLoader = {
             var text = new TextDecoder("utf-8").decode(this.fileContent);
             callback(text);
         };
+        var getDataUrl = function(callback) {
+            callback(URL.createObjectURL(new Blob([this.fileContent])));
+        };
         var rec = function(entry) {
             if(entry.type === 'file') {
                 entry.getText = getText;
+                entry.getDataUrl = getDataUrl;
                 var type = this.getType(entry.fullFileName);
                 var device = new Ext.tree.TreeNode({
                     text: entry.fullFileName, 
@@ -350,6 +349,9 @@ var deviceLoader = {
             return "stone";
         } else if (name.endsWith("maps")) {
             return "mmap";
+        } else if (name.endsWith(".jpg")
+            || name.endsWith(".png")) {
+            return "image";
         } else if (/\.log/.test(name)) {
             return "log";
         } else {
