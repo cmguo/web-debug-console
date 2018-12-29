@@ -1,18 +1,5 @@
 // devices.js
 
-var jiraOptions = {
-    "bugfree": {
-        headers: {
-            Authorization: "Basic cHBib3gtcm9tOlJvb20xMjM0NTY3"
-        }
-    }, 
-    "newjira.cnsuning.com": {
-        headers: {
-            Authorization: "Basic MTYwOTE4ODA6V0FMTHBhcGVyMTIzNDU2Nw=="
-        }
-    }
-}
-
 var rpc = { loaded: function() {} };
 RPC.new("./worker.js", rpc).then(function(r) {
     rpc = r;
@@ -326,7 +313,7 @@ var deviceLoader = {
     },
 
     addJira: function(id) {
-        var host = "bugfree";
+        var host = jiraOptions.default;
         var path = id;
         if (id.indexOf("://") > 0) { 
             var url = new URL(id);
