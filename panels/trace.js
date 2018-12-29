@@ -19,7 +19,20 @@ var TracePanel = function(c) {
                 var h = g.gvalue.heldBy;
                 g.style += h.heldBy == h ? " background-color: yellow" : " background-color: #ff4444";
             }
+            ++this.groupCount;
             Ext.grid.GroupingView.prototype.doGroupStart.apply(this, arguments);
+        },
+        listeners: {
+            beforerefresh: function(view) {
+                view.groupCount = 0;
+            },
+            refresh: function(view) {
+                if (view.groupCount > 1) {
+                    view.collapseAllGroups();
+                } else {
+                    view.expandAllGroups();
+                }
+            }
         }
     }, c.viewConfig));
     var expander = new Ext.grid.RowExpander({
@@ -141,7 +154,7 @@ var JTracePanel = Ext.extend(TracePanel, {
     constructor: function(c) {
         JTracePanel.superclass.constructor.call(this, Ext.applyIf({
             datasrc: Ext.applyIf({type: 'jtrace'}, c.datasrc),
-            path: "trace?o="
+            path: c.datasrc.type == 'endpoint' ? 'trace?o=' : ''
         }, c));
     }
 });
@@ -151,7 +164,7 @@ var NTracePanel = Ext.extend(TracePanel, {
     constructor: function(c) {
         NTracePanel.superclass.constructor.call(this, Ext.applyIf({
             datasrc: Ext.applyIf({type: 'ntrace'}, c.datasrc),
-            path: "nativetrace?o="
+            path: c.datasrc.type == 'endpoint' ? 'nativetrace?o=' : ''
         }, c));
     }
 });
