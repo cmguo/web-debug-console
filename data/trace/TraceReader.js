@@ -45,6 +45,11 @@ Ext.extend(TraceReader, DataReader, {
                     pid: parseInt(pid),
                     time: time
                 };
+                threads.push({
+                    lines: proc.lines,
+                    proc: proc,
+                    name: '[Summary]'
+                })
                 process.push(proc);
             } else if (line.startsWith("Cmd line: ")) {
                 proc.cmdline = line.substring(10);

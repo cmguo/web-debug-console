@@ -62,7 +62,7 @@ var PackagePanel = function(c) {
         if (!node.leaf) {
             return;
         }
-        var type = deviceLoader.getType(node.text);
+        var type = panels.getType(node.text);
         var panel = panels[type];
         if (typeof panel == "function") {
             var path = "";

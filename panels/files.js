@@ -189,7 +189,7 @@ Ext.extend(FileList, Ext.grid.GridPanel, {
             row = this.store.getAt(row);
         }
         var name = row.get('name');
-        var type = deviceLoader.getType(name);
+        var type = panels.getType(name);
         var dir = row.get("mode").startsWith('d');
         var url = this.store.proxy.url;
         var path = this.getPath(row);
@@ -257,21 +257,18 @@ var FilesPanel = function(c) {
         items: [list, preview]
     }, c));
     list.on("rowclick", function(grid, row) {
-        preview.setPreview('text', '预览');
-        console.log("preview");
+        preview.setPreview(null, '预览');
         if (this.previewDelayed) {
             clearTimeout(this.previewDelayed);
             this.previewDelayed = 0;
         }
         this.previewDelayed = setTimeout(function() {
-            console.log("preview2");
             list.getPreview(row, function(type, url) {
                 preview.setPreview(type, url);
             }.bind(this));
         }.bind(this), 1000);
     }.bind(this));
     list.on("rowdblclick", function() {
-        console.log("cancel");
         if (this.previewDelayed) {
             clearTimeout(this.previewDelayed);
             this.previewDelayed = 0;

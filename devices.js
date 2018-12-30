@@ -26,6 +26,12 @@ var deviceLoader = {
     },
 
     loadRoot(node, callback) {
+        node.appendChild(new Ext.tree.TreeNode({
+            id: 'config', 
+            text: '平台设置',
+            type: 'config',
+            file: 'not save'
+        }));
         var devices = window.localStorage.devices || "[]";
         devices = eval("("+devices+")");
         devices.forEach(function(d) {
@@ -76,7 +82,7 @@ var deviceLoader = {
         var rec = function(entry) {
             entry.getText = getText;
             entry.getDataUrl = getDataUrl;
-            var type = this.getType(entry.filename);
+            var type = panels.getType(entry.filename);
             var device = new Ext.tree.TreeNode({
                 text: entry.filename, 
                 name: entry.filename, 
@@ -109,7 +115,7 @@ var deviceLoader = {
             if(entry.type === 'file') {
                 entry.getText = getText;
                 entry.getDataUrl = getDataUrl;
-                var type = this.getType(entry.fullFileName);
+                var type = panels.getType(entry.fullFileName);
                 var device = new Ext.tree.TreeNode({
                     text: entry.fullFileName, 
                     name: entry.fullFileName, 
@@ -177,33 +183,14 @@ var deviceLoader = {
 
     loadJira: function(node, callback) {
         var thiz = this;
-        var opts = jiraOptions[node.attributes.host];
-        Ext.Ajax.request(Ext.apply({
-            url: node.attributes.url, 
-            disableCaching: false, 
-            scope: this, 
-            success: function(response) {
-                var json = response.responseText;
-                var prefix = node.attributes.url;
-                prefix = prefix.substring(0, prefix.indexOf("/", 1));
-                var o = eval("("+json+")");
-                var now = new Date();
-                o.fields.attachment.forEach(function(a) {
-                    var url = new URL(a.content);
-                    url.pathname = prefix + url.pathname;
-                    var type = this.getType(a.filename);
-                    node.appendChild(this.createNode({
-                        text: a.filename + "(" + dateDiff(a.created, now) + ")", 
-                        name: a.filename,
-                        type: type, 
-                        url: url.toString(), 
-                        opts: opts
-                    }));
-                }.bind(this));
-                thiz.sort(node);
-                callback(this, node);
-            }
-        }, opts));
+        var jira = new Jira(node.attributes);
+        jira.load(function(jira) {
+            jira.getAttachments().forEach(function(a) {
+                node.appendChild(this.createNode(a));
+            }.bind(this));
+            thiz.sort(node);
+            callback(this, node);
+        }.bind(this));
     }, 
 
     sort: function(node) {
@@ -293,7 +280,7 @@ var deviceLoader = {
             if (!file) {
                 return;
             }
-            var type = this.getType(file.name);
+            var type = panels.getType(file.name);
             var node = {
                 text: file.name,
                 name: file.name,
@@ -312,51 +299,9 @@ var deviceLoader = {
     },
 
     addJira: function(id) {
-        var host = jiraOptions.default;
-        var path = id;
-        if (id.indexOf("://") > 0) { 
-            var url = new URL(id);
-            host = url.hostname;
-            id = url.pathname.split("/").slice(-1)[0];
-            path = "/" + host + url.pathname;
-        } else {
-            path = "/" + host + "/rest/api/2/issue/" + id;
-        }
-        var type = this.getType(id);
-        if (id.indexOf(".") < 0) {
-            type = "[jira]";
-            path = "/" + host + "/rest/api/2/issue/" + id;
-        }
-        var node = {
-            text: id, 
-            type: type,
-            host: host, 
-            url: path
-        };
+        var node = Jira.format(id);
         devicePanel.getRootNode().appendChild(this.createNode(node));
         devicePanel.save();
-    },
-
-    getType: function(name) {
-        name = name.substring(name.lastIndexOf("/") + 1);
-        if (name.endsWith(".zip")) {
-            return "[zip]";
-        } else if (name.endsWith(".rar")) {
-            return "[rar]";
-        } else if (name.startsWith("traces.")) {
-            return "jtrace";
-        } else if (name.startsWith("tombstone")) {
-            return "stone";
-        } else if (name.endsWith("maps")) {
-            return "mmap";
-        } else if (name.endsWith(".jpg")
-            || name.endsWith(".png")) {
-            return "image";
-        } else if (/\.log/.test(name)) {
-            return "log";
-        } else {
-            return "binary";
-        }
     },
 
     createNode: function(node) {
@@ -411,7 +356,7 @@ var devicePanel = new Ext.tree.TreePanel({
             }
         },
         contextmenu: function(node, e) {
-            node.select();
+            node.select();  
             if (node.parentNode == node.getOwnerTree().getRootNode()) {
                 var c = node.getOwnerTree().contextMenu;
                 c.contextNode = node;
