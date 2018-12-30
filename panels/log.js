@@ -1,38 +1,91 @@
 // panels/log.js
 
-var FilterStore = function(c) {
-    FilterStore.superclass.constructor.call(this, Ext.apply({
-        reader: new Ext.data.ArrayReader({id: 0}, ['id', c.filterField])
+var LogTagTree = function(c) {
+    ConfigPanel.superclass.constructor.call(this, Ext.apply({
+        root: {
+            id: '#', 
+            text: '',
+            children: Object.keys(LogStore.tagFilterGroups).map(function(k) {
+                return {
+                    id: k,
+                    text: '{' + k + '}',
+                    children: this[k].map(function(v) {
+                        return {
+                            text: v, 
+                            leaf: true
+                        };
+                    })
+                };
+            }, LogStore.tagFilterGroups)
+        },
+        buttons: [{
+            text: '增加组', 
+            scope: this, 
+            handler: this.addGroup
+        }, {
+            text: '增加', 
+            scope: this, 
+            handler: this.addTag
+        }, {
+            text: '删除', 
+            scope: this, 
+            handler: this.delete
+        }]
     }, c));
-    this.init();
 };
 
-Ext.extend(FilterStore, Ext.data.Store, {
-    init: function() {
-        var filter = function(store, records) {
-            var field = this.filterField;
-            var datas = [];
-            var old = {};
-            this.each(function(r) {
-                old[r.id] = r;
+Ext.extend(LogTagTree, Ext.tree.TreePanel, {
+    rootVisible: false,
+    addGroup: function() {
+        var root = this.getRootNode();
+        InputWindow.input("输入TAG分组名称", function(k) {
+            LogStore.addTagFilterGroup(k)
+            var node = new Ext.tree.TreeNode({
+                id: k,
+                text: '{' + k + '}',
+                children: []
             });
-            records.forEach(function(r) {
-                var v = r.get(field);
-                if (v && !old[v]) {
-                    datas.push([v, String(v)]);
-                    old[v] = r;
-                }
-            });
-            var r = this.reader.readRecords(datas);
-            this.add(r.records);
-            this.fireEvent("load", this, this.data.items);
-        };
-        this.store.on("load", filter, this);
-        this.store.on("add", filter, this);
+            root.appendChild(node);
+        });
+    },
+    addTag: function() {
+        var node = this.getSelectionModel().getSelectedNode();
+        InputWindow.input("输入TAG", function(k) {
+            if (!LogStore.addTagFilter(node.id, k)) return;
+            node.appendChild(new Ext.tree.TreeNode({
+                text: k, 
+                leaf: true
+            }));
+        });
+    },
+    delete: function() {
+        var node = this.getSelectionModel().getSelectedNode();
+        if (node) {
+            if (node.leaf) {
+                LogStore.removeTagFilter(node.parentNode.id, node.text)
+            } else {
+                LogStore.removeTagFilterGroup(node.id);
+            }
+            node.remove();
+        }
     }
 });
 
-//Ext.grid.filter.StringFilter.prototype.icon = 'img/find.png';
+var LogConfig = function(c) {
+    var logTagTree = new LogTagTree({
+        title: 'TAG过滤器分组'
+    });
+    LogConfig.superclass.constructor.call(this, Ext.apply({
+        items: [
+            logTagTree
+        ]
+    }, c));
+};
+
+Ext.extend(LogConfig, Ext.Panel, {
+    title: '日志',
+    layout: 'fit'
+});
 
 /********** 解决日历控件显示异常 **********/  
 Ext.override(Ext.menu.DateMenu, {  
@@ -45,8 +98,24 @@ Ext.override(Ext.menu.DateMenu, {
     }  
 }); 
 
-
 var Date_clearTime = Date.prototype.clearTime;
+
+var alphaGroup = function(v) {
+    var c = v.charAt(0).toUpperCase().charCodeAt(0);
+    if (c >= 0x41 && c <= 0x5a) {
+        c -= (c + 1) % 3;
+        if (c < 0x59) {
+            return '['+ String.fromCharCode(c) 
+                + String.fromCharCode(c + 1) 
+                + String.fromCharCode(c + 2) + ']';
+        } else {
+            return '['+ String.fromCharCode(c) 
+                + String.fromCharCode(c + 1) + ']';
+        }
+    } else {
+        return '[Other]';
+    }
+}
 
 Ext.override(Date, {
     clearTime: function(clone) {
@@ -56,39 +125,12 @@ Ext.override(Date, {
     }
 });
 
-
-var ListFilter = function(c) {
-    c.store = new FilterStore({
-        store: c.store, 
-        filterField: c.dataIndex
-    });
-    c.labelField = c.dataIndex;
-    ListFilter.superclass.constructor.call(this, c);
-}
-
-Ext.extend(ListFilter, Ext.grid.filter.ListFilter, {
-    toggleItem: function(id) {
-        var sel;
-        this.menu.items.each(function(item) {
-            if (item.itemId == id) {
-                sel = item;
-            }
-        });
-        if (sel) {
-            sel.setChecked(!sel.checked);
-            this.setActive(this.isActivatable());
-        }
-    } 
-});
-
 Ext.override(Ext.grid.filter.Filter, {
     toggleActive: function() {
         if (this.isActivatable())
             this.setActive(!this.active);
     }
 });
-
-Ext.grid.filter.List2Filter = ListFilter;
 
 var LogPanel = function(c) {
     var store = c.store || new TextLogStore(c);
@@ -138,6 +180,7 @@ var LogPanel = function(c) {
         }, {
             dataIndex: 'tid', 
             type: 'list2', 
+            groupField: 'pid',
             store: store
         }, {
             dataIndex: 'prio', 
@@ -145,6 +188,9 @@ var LogPanel = function(c) {
         }, {
             dataIndex: 'tag', 
             type: 'list2', 
+            groupField: 'tag-alpha',
+            groupFormattor: alphaGroup,
+            groupCache: LogStore.tagFilterGroups,
             store: store
         }, {
             dataIndex: 'msg', 

@@ -6,7 +6,8 @@ var ConfigPanel = function(c) {
     delete c.closable;
     ConfigPanel.superclass.constructor.call(this, Ext.apply({
         items: [
-            new JiraConfig(c)
+            new JiraConfig(c), 
+            new LogConfig(c)
         ]
     }, c1));
 };
