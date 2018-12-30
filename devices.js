@@ -1,10 +1,5 @@
 // devices.js
 
-var rpc = { loaded: function() {} };
-RPC.new("libunrar/worker.js", rpc).then(function(r) {
-    rpc = r;
-});
-
 function clickElem(elem) {
     // Thx user1601638 on Stack Overflow (6/6/2018 - https://stackoverflow.com/questions/13405129/javascript-create-and-save-file )
     var eventMouse = document.createEvent("MouseEvents")
@@ -64,131 +59,37 @@ var deviceLoader = {
     },
 
     loadZip: function(node, callback) {
-        var reader;
-        if (node.attributes.file)
-            reader = new zip.BlobReader(node.attributes.file);
-        else
-            reader = new zip.HttpReader(node.attributes.url);
-        var getText = function(callback) {
-            this.getData(new zip.TextWriter(), function(text) {
-                callback(text);
+        var zip = new Zip();
+        node.attributes.zip = zip;
+        zip.open(node.attributes, function(zip, entries) {
+            entries.forEach(function(e) {
+                node.appendChild(new Ext.tree.TreeNode(e));
             });
-        }
-        var getDataUrl = function(callback) {
-            this.getData(new zip.BlobWriter(), function(blob) {
-                callback(URL.createObjectURL(blob));
-            });
-        }
-        var rec = function(entry) {
-            entry.getText = getText;
-            entry.getDataUrl = getDataUrl;
-            var type = panels.getType(entry.filename);
-            var device = new Ext.tree.TreeNode({
-                text: entry.filename, 
-                name: entry.filename, 
-                type: type, 
-                entry: entry
-            });
-            node.appendChild(device);
-        };
-        var resp = function(entries) {
-            entries.forEach(rec, this);
             this.sort(node);
             callback(this, node);
-        }.bind(this);
-        zip.createReader(reader, function(zipReader) {
-            node.attributes.reader = zipReader;
-            zipReader.getEntries(resp, function(msg) {
-            });
-        });
+        }.bind(this));
     },
 
     loadRar: function(node, callback) {
-        var getText = function(callback) {
-            var text = new TextDecoder("utf-8").decode(this.fileContent);
-            callback(text);
-        };
-        var getDataUrl = function(callback) {
-            callback(URL.createObjectURL(new Blob([this.fileContent])));
-        };
-        var rec = function(entry) {
-            if(entry.type === 'file') {
-                entry.getText = getText;
-                entry.getDataUrl = getDataUrl;
-                var type = panels.getType(entry.fullFileName);
-                var device = new Ext.tree.TreeNode({
-                    text: entry.fullFileName, 
-                    name: entry.fullFileName, 
-                    type: type, 
-                    entry: entry
-                });
-                node.appendChild(device);
-            } else if(entry.type === 'dir') {
-                Object.keys(entry.ls).forEach(function(k) {
-                    rec(entry.ls[k])
-                })
-            } else {
-                throw "Unknown type"
-            }
-        }.bind(this);
-        var reader;
-        if (node.attributes.file)
-            reader = new zip.BlobReader(node.attributes.file);
-        else
-            reader = new zip.HttpReader(node.attributes.url);
-        var thiz = this;
-        reader.init(function() {
-            reader.readUint8Array(0, reader.size, function(bytes) {
-                var data = [{name: node.attributes.text, content: bytes}];
-                rpc.unrar(data, null).then(function(ret) {
-                    rec(ret);
-                    thiz.sort(node);
-                    callback(this, node);
-                });
+        var rar = new Rar();
+        node.attributes.rar = rar;
+        rar.open(node.attributes, function(rar, entries) {
+            entries.forEach(function(e) {
+                node.appendChild(new Ext.tree.TreeNode(e));
             });
-        });
-    },
-
-    loadRar_: function(node, callback) {
-        var rar;
-        if (node.attributes.file) {
-            rar = Rar.fromFile(node.attributes.file);
-        } else {
-            rar = Rar.fromUri(node.attributes.url, node.attributes.opts);
-        }
-        rar.then((archive) => {
-            node.attributes.archive = archive;
-            var getText = function(callback) {
-                archive.get(this).then((entry) => {
-                    var reader = new FileReader();
-                    reader.onload = function() {
-                        callback(reader.result);
-                    }
-                    reader.readAsText(entry);
-                });
-            }
-            archive.entries.forEach(function(entry) {
-                entry.getText = getText;
-                var device = new Ext.tree.TreeNode({
-                    text: entry.name, 
-                    name: entry.name, 
-                    type: "log", 
-                    entry: entry
-                });
-                node.appendChild(device);
-            });
+            this.sort(node);
             callback(this, node);
-        });
+        }.bind(this));
     },
 
     loadJira: function(node, callback) {
-        var thiz = this;
-        var jira = new Jira(node.attributes);
-        jira.load(function(jira) {
+        var jira = new Jira();
+        node.attributes.jira = jira;
+        jira.open(node.attributes, function(jira) {
             jira.getAttachments().forEach(function(a) {
                 node.appendChild(this.createNode(a));
             }.bind(this));
-            thiz.sort(node);
+            this.sort(node);
             callback(this, node);
         }.bind(this));
     }, 
