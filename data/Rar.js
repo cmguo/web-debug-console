@@ -29,7 +29,6 @@ Ext.extend(Rar, Object, {
                     type: type, 
                     entry: entry
                 });
-                node.appendChild(device);
             } else if(entry.type === 'dir') {
                 Object.keys(entry.ls).forEach(function(k) {
                     rec(entry.ls[k])

@@ -23,6 +23,7 @@ var panels = {
     text: TextPanel,
     image: ImagePanel,
     video: VideoPanel,
+    jira: JiraPanel,
     config: ConfigPanel,
 
     getType: function(name) {

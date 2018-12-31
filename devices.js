@@ -85,8 +85,8 @@ var deviceLoader = {
     loadJira: function(node, callback) {
         var jira = new Jira();
         node.attributes.jira = jira;
-        jira.open(node.attributes, function(jira) {
-            jira.getAttachments().forEach(function(a) {
+        jira.open(node.attributes, function(jira, entries) {
+            entries.forEach(function(a) {
                 node.appendChild(this.createNode(a));
             }.bind(this));
             this.sort(node);

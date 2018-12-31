@@ -117,11 +117,63 @@ Ext.extend(JiraConfig, Ext.Panel, {
 });
 
 var JiraPanel = function(c) {
+    var jira = c.datasrc.jira;
+    var expander = new Ext.grid.RowExpander({
+        tpl : new Ext.XTemplate(
+                  '<tpl for="body"',
+                  '<p>{.}</p>',
+                  '</tpl>')
+    });
+    var comments = new Ext.grid.GridPanel({
+        title: '备注',
+        region: 'center', 
+        store: new Ext.data.JsonStore({
+            fields: ['author', 'updated', 'subject', 'body'],
+            data: jira.getComments()
+        }),
+        plugins: expander, 
+        columns: [expander, {
+            header: '人员',
+            width: 80,
+            dataIndex: 'author'
+        }, {
+            header: '时间', 
+            width: 140, 
+            dataIndex: 'updated'
+        }, {
+            header: '摘要', 
+            width: 450, 
+            dataIndex: 'subject'
+        }],
+    });
+    var detail = new Ext.grid.PropertyGrid({
+        title: '详情',
+        region: 'east',
+        width: 250,
+        collapsible: true,
+        source: jira.getDetail()
+    });
     JiraPanel.superclass.constructor.call(this, Ext.apply({
+        layout: 'fit',
+        items: [{
+            layout: 'border',
+            title: jira.getSummary(),
+            items: [
+                detail, {
+                    region: 'center',
+                    layout: 'border',
+                    items: [{
+                        region: 'north',
+                        height: 150,
+                        xtype: 'textarea',
+                        value: jira.getDescription()
+                    }, comments]
+                }
+            ]
+        }]
     }, c));
 }
 
 Ext.extend(JiraPanel, Ext.Panel, {
     title: 'JIRA',
-    layout: 'border'
 });

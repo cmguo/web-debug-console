@@ -80,6 +80,7 @@ Jira.defaultServer = function(host) {
 Ext.extend(Jira, Object, {
     open: function(src, callback) {
         this.url = src.url;
+        this.id = src.text;
         this.opts = jiraOptions[src.host];
             Ext.Ajax.request(Ext.apply({
             url: this.url, 
@@ -88,10 +89,29 @@ Ext.extend(Jira, Object, {
             success: function(response) {
                 var json = response.responseText;
                 this.data = eval("("+json+")");
-                callback(this);
+                callback(this, this.getEntries());
             }
         }, this.opts));
     }, 
+    getEntries: function() {
+        var entries = [{
+            text: this.id,
+            name: 'JIRA', 
+            type: 'jira', 
+            jira: this
+        }];
+        entries = entries.concat(this.getAttachments());
+        return entries;
+    },
+    getSummary: function() {
+        return this.data.fields.summary;
+    },
+    getDetail: function() {
+        return this.data.fields;
+    },
+    getDescription: function() {
+        return this.data.fields.description;
+    },
     getAttachments: function() {
         var now = new Date();
         var prefix = this.url.substring(0, this.url.indexOf("/", 1));
@@ -107,7 +127,21 @@ Ext.extend(Jira, Object, {
                 opts: this.opts
             };
         }.bind(this));
-    }
+    },
+    getComments: function() {
+        var now = new Date();
+        return this.data.fields.comment.comments.map(function(c) {
+            var updated = new Date(c.updated);
+            var n = c.body.indexOf('\n');
+            if (n < 0 || n > 50) n = 50;
+            return {
+                author: c.author.displayName, 
+                updated: updated.format('m-d H:i') + "(" + dateDiff(updated, now) + ")",
+                body: c.body, 
+                subject: c.body.substring(0, n)
+            };
+        }.bind(this));
+    },
 });
 
 Jira.format = function(id) {
