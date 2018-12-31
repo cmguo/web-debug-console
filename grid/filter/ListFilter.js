@@ -85,23 +85,12 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 
 		if (this.groupCache) {
 			Object.keys(this.groupCache).forEach(function(k) {
-				var groupItem = new Ext.menu.CheckItem({
-					text: '{' + k + '}', 
-					menu: new Ext.menu.Menu({
-						items: this.groupCache[k].map(function(v) {
-							var item = new Ext.menu.CheckItem({
-								text: String(v),
-								checked: true
-							});
-							item.itemId = v;
-							return item;
-						})
-					})
-				});
-				groupItem.menu.ownerItem = groupItem;
-				groupItem.on('checkchange', this.checkChange, this);
-				this.menu.add(groupItem);
+				this.addCacheGroup(k, this.groupCache[k]);
 			}, this);
+		}
+
+		if (this.menuItems) {
+			this.menu.add.apply(this.menu, this.menuItems);
 		}
 		
 		var gid = this.single ? Ext.id() : null;
@@ -116,56 +105,51 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 			item.itemId = records[i].id;
 			item.on('checkchange', this.checkChange, this);
 			if (store.groupField) {
-				var g = records[i].get(store.groupField);
-				if (!groupItem || groupItem.g != g) {
-					if (groupItem) {
-						if (groupItem.menu.length > 1) {
-							groupItem.menu = new Ext.menu.Menu({
-								items: groupItem.menu
-							});
-							delete groupItem.g;
-							groupItem = new Ext.menu.CheckItem(groupItem);
-							groupItem.menu.ownerItem = groupItem;
-							groupItem.on('checkchange', this.checkChange, this);
-							this.menu.add(groupItem);
-						} else {
-							this.menu.add(groupItem.menu[0]);
-						}
-					}
-					groupItem = {
-						text: '' + g,
-						g: g,
-						menu: []
-					};
-				}
-				groupItem.menu.push(item);
+				var group = records[i].get(store.groupField);
+				groupItem = this.addItemToGroup(groupItem, item, group);
 			} else {
 				this.menu.add(item);
 			}
 		} // for
-		if (groupItem) {
-			if (this.menu.items.length == 0) {
-				this.menu.add.apply(this.menu, groupItem.menu);
-			} else if (groupItem.menu.length > 1) {
-				groupItem.menu = new Ext.menu.Menu({
-					items: groupItem.menu
-				});
-				delete groupItem.g;
-				groupItem = new Ext.menu.CheckItem(groupItem);
-				groupItem.menu.ownerItem = groupItem;
-				groupItem.on('checkchange', this.checkChange, this);
-				this.menu.add(groupItem);
-			} else {
-				this.menu.add(groupItem.menu[0]);
-			}
-		}
+
+		this.addItemToGroup(groupItem, records.length);
 		
 		this.setActive(this.isActivatable());
 		this.loaded = true;
 		
-		if(visible) {
+		if (visible) {
 			this.menu.show(); //Adaptor will re-invoke with previous arguments
-    }
+    	}
+	},
+
+	addItemToGroup: function(groupItem, item, group) {
+		if (!groupItem || groupItem.group != group) {
+			if (groupItem) {
+				if ((typeof item == 'number') && groupItem.menu.length == item) {
+					this.menu.add.apply(this.menu, groupItem.menu);
+				} else if (groupItem.menu.length > 1) {
+					groupItem.menu = new Ext.menu.Menu({
+						items: groupItem.menu
+					});
+					delete groupItem.group;
+					groupItem = new Ext.menu.CheckItem(groupItem);
+					groupItem.menu.ownerItem = groupItem;
+					groupItem.on('checkchange', this.checkChange, this);
+					this.menu.add(groupItem);
+				} else {
+					this.menu.add(groupItem.menu[0]);
+				}
+			}
+			if (typeof item == 'number') return null;
+			groupItem = {
+				text: '' + group,
+				group: group,
+				hideOnClick: false,
+				menu: []
+			};
+		}
+		groupItem.menu.push(item);
+		return groupItem;
 	},
 	
 	checkChange: function(item, checked) {
@@ -176,20 +160,31 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 			}
 		}
 		var value = [];
-		var collect = function(item) {
-			if(item.checked) {
-				if (item.menu) {
-					item.menu.items.each(collect,this);
-				} else {
-					value.push(item.itemId);
-				}
-      		}
-		};
-		this.menu.items.each(collect,this);
+		this.visitItem(function(item) {
+			if (item.menu) {
+				return item.checked;
+			}
+			if (item.checked) {
+				value.push(item.itemId);
+			}
+		});
 		this.value = value;
 		
 		this.setActive(this.isActivatable());
 		this.fireEvent("update", this);
+	},
+
+	visitItem: function(visitor, items) {
+		items = items || this.menu.items;
+		items.each(function(item) {
+			if (item.menu) {
+				if (visitor(item)) {
+					this.visitItem(visitor, item.menu.items);
+				}
+			} else {
+				visitor(item);
+			}
+		}, this);
 	},
 	
 	isActivatable: function() {
@@ -200,21 +195,52 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 		var value = this.value = [].concat(value);
 
 		if(this.loaded) {
-			this.menu.items.each(function(item) {
-				item.setChecked(false, true);
-				for(var i=0, len=value.length; i<len; i++) {
-					if(item.itemId == value[i]) {
-						item.setChecked(true, true);
-          }
-        }
-			}, this);
-    }
-			
+			visitItem(function(item) {
+				item.setChecked(value.indexOf(item.itemId) >= 0, true);
+          	});
+    	}
+		
 		this.fireEvent("update", this);
 	},
 	
 	getValue: function() {
 		return this.value;
+	},
+
+	getNonCachedValue: function() {
+		var value = [];
+		this.visitItem(function(item) {
+			if (item.cacheGroup) {
+				return false;
+			}
+			if (item.menu) {
+				return item.checked;
+			}
+			if (item.checked) {
+				value.push(item.itemId);
+			}
+		});
+		return value;
+	},
+
+	addCacheGroup: function(k, values) {
+		var groupItem = new Ext.menu.CheckItem({
+			text: '{' + k + '}', 
+			menu: new Ext.menu.Menu({
+				items: values.map(function(v) {
+					var item = new Ext.menu.CheckItem({
+						text: String(v),
+						checked: true
+					});
+					item.itemId = v;
+					return item;
+				})
+			})
+		});
+		groupItem.cacheGroup = values;
+		groupItem.menu.ownerItem = groupItem;
+		groupItem.on('checkchange', this.checkChange, this);
+		this.menu.insert(0, groupItem);
 	},
 	
 	serialize: function() {

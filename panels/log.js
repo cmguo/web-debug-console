@@ -191,6 +191,11 @@ var LogPanel = function(c) {
             groupField: 'tag-alpha',
             groupFormattor: alphaGroup,
             groupCache: LogStore.tagFilterGroups,
+            menuItems: [{
+                text: '保存到分组',
+                scope: this,
+                handler: this.saveTagGroup
+            }, '-'],
             store: store
         }, {
             dataIndex: 'msg', 
@@ -289,6 +294,15 @@ Ext.extend(LogPanel, Ext.grid.GridPanel, {
                 }
             }
         }
+    },
+    saveTagGroup: function() {
+        var filter = this.filters.getFilter('tag');
+        var values = filter.getNonCachedValue();
+        if (values.length == 0) return;
+        InputWindow.input("输入TAG分组名称", function(k) {
+            if (!LogStore.addTagFilterGroup(k, values)) return;
+            filter.addCacheGroup(k, values);
+        });
     },
     listeners : {
         celldblclick: function(grid, rowIndex, columnIndex) {

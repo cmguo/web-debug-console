@@ -54,14 +54,14 @@ Ext.grid.filter.List2Filter = function(c) {
 Ext.extend(Ext.grid.filter.List2Filter, Ext.grid.filter.ListFilter, {
     toggleItem: function(id) {
         var sel;
-        this.menu.items.each(function(item) {
+        this.visitItem(function(item) {
             if (item.itemId == id) {
                 sel = item;
             }
+            return true;
         });
         if (sel) {
             sel.setChecked(!sel.checked);
-            this.setActive(this.isActivatable());
         }
     } 
 });

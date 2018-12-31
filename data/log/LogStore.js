@@ -13,14 +13,18 @@ LogStore.saveTagFilterGroups = function() {
         Ext.util.JSON.encode(this.tagFilterGroups);
 }
 
-LogStore.addTagFilterGroup = function(name) {
-    this.tagFilterGroups[name] = [];
+LogStore.addTagFilterGroup = function(name, tags) {
+    if (this.tagFilterGroups[name] != undefined) return false;
+    this.tagFilterGroups[name] = tags || [];
     this.saveTagFilterGroups();
+    return true;
 }
 
 LogStore.removeTagFilterGroup = function(name) {
+    if (this.tagFilterGroups[name] == undefined) return false;
     delete this.tagFilterGroups[name];
     this.saveTagFilterGroups();
+    return true;
 }
 
 LogStore.addTagFilter = function(group, tag) {
