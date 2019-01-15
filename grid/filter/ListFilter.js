@@ -125,19 +125,21 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 	addItemToGroup: function(groupItem, item, group) {
 		if (!groupItem || groupItem.group != group) {
 			if (groupItem) {
-				if ((typeof item == 'number') && groupItem.menu.length == item) {
-					this.menu.add.apply(this.menu, groupItem.menu);
-				} else if (groupItem.menu.length > 1) {
+				if ((typeof item == 'number') && groupItem.items.length == item) {
+					this.menu.add.apply(this.menu, groupItem.items);
+				} else if (groupItem.items.length > 1) {
 					groupItem.menu = new Ext.menu.Menu({
-						items: groupItem.menu
+						items: groupItem.items
 					});
 					delete groupItem.group;
 					groupItem = new Ext.menu.CheckItem(groupItem);
-					groupItem.menu.ownerItem = groupItem;
+					groupItem.menu.items.each(function(t) {
+						t.ownerItem = groupItem;
+					});
 					groupItem.on('checkchange', this.checkChange, this);
 					this.menu.add(groupItem);
 				} else {
-					this.menu.add(groupItem.menu[0]);
+					this.menu.add(groupItem.items[0]);
 				}
 			}
 			if (typeof item == 'number') return null;
@@ -145,18 +147,18 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 				text: '' + group,
 				group: group,
 				hideOnClick: false,
-				menu: []
+				items: []
 			};
 		}
-		groupItem.menu.push(item);
+		groupItem.items.push(item);
 		return groupItem;
 	},
 	
 	checkChange: function(item, checked) {
 		if (checked) {
-			var parentMenu = item.parentMenu;
-			if (parentMenu != this.menu) {
-				parentMenu.ownerItem.setChecked(true, true);
+			var ownerItem = item.ownerItem;
+			if (ownerItem != null) {
+				ownerItem.setChecked(true, true);
 			}
 		}
 		var value = [];
@@ -238,7 +240,9 @@ Ext.grid.filter.ListFilter = Ext.extend(Ext.grid.filter.Filter, {
 			})
 		});
 		groupItem.cacheGroup = values;
-		groupItem.menu.ownerItem = groupItem;
+		groupItem.menu.items.each(function(t) {
+			t.ownerItem = groupItem;
+		});
 		groupItem.on('checkchange', this.checkChange, this);
 		this.menu.insert(0, groupItem);
 	},
