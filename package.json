@@ -1,0 +1,24 @@
+{
+  "name": "web-debug-console",
+  "version": "1.0.0",
+  "description": "远程调试平台",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmguo/web-debug-console.git"
+  },
+  "keywords": [
+    "debug",
+    "android",
+    "remote"
+  ],
+  "author": "cmguo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cmguo/web-debug-console/issues"
+  },
+  "homepage": "https://github.com/cmguo/web-debug-console#readme"
+}
